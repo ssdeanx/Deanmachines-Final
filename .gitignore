@@ -1,0 +1,61 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+
+gen-lang-client-0520765474-firebase-adminsdk-fbsvc-d1e16fc9e0.json
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+.vscode
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+.mastra
+.repomix
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+api.md
+
+openapi.yaml
+openapi.json
+
+memory.db*
+
+# Firebase
+
+functions/node_modules
+functions/.runtimeconfig.json
+**/node_modules/**
+firebase-debug.log
+firebase-debug.*.log
+.firebaserc
+apphosting.emulator.yaml
+/dataconnect
+/dataconnect-generated*
+dataconnect/
+/dataconnect/*
+/dataconnect-generated/*
+/dataconnect-generated

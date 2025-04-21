@@ -1,7 +1,12 @@
 "use client";
 import { Card } from "@/components/ui/card";
 
-// Main chat layout wrapper (2025 standards)
+/**
+ * ChatLayout
+ * Main chat layout wrapper for chat panel.
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for extensibility
+ */
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
   return (
     <Card

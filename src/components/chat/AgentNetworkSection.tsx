@@ -7,6 +7,12 @@ const mockNetworks = [
   { id: "3", name: "Ops Collective", agents: 4, status: "online" },
 ];
 
+/**
+ * NetworkDetailModal
+ * Modal for displaying details about an agent network.
+ * @param network - The network object to display
+ * @param onClose - Callback to close the modal
+ */
 function NetworkDetailModal({ network, onClose }: { network: any; onClose: () => void }) {
   if (!network) return null;
   return (
@@ -44,6 +50,12 @@ function NetworkDetailModal({ network, onClose }: { network: any; onClose: () =>
   );
 }
 
+/**
+ * AgentNetworkSection
+ * Displays all agent networks with search, selection, and context actions.
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for real DTOs/API
+ */
 export default function AgentNetworkSection() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
@@ -80,7 +92,11 @@ export default function AgentNetworkSection() {
   );
 
   return (
-    <section className="relative p-4 rounded-2xl bg-card-membrane/80 border border-[var(--color-border)] shadow-xl mb-6 overflow-hidden">
+    <section
+      tabIndex={0}
+      aria-label="Agent Networks Section"
+      className="relative p-4 rounded-2xl bg-card-membrane/80 border border-[var(--color-border)] shadow-xl mb-6 overflow-hidden focus:ring-2 focus:ring-accent outline-none group"
+    >
       <Overlay />
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-bold text-xl tracking-tight flex items-center gap-2">
@@ -121,6 +137,7 @@ export default function AgentNetworkSection() {
             tabIndex={0}
             aria-label={`Network: ${network.name}`}
             onClick={() => setModalNetwork(network)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setModalNetwork(network); }}
             onContextMenu={(e) => {
               e.preventDefault();
               setShowMenu(network.id);
@@ -178,3 +195,12 @@ export default function AgentNetworkSection() {
     </section>
   );
 }
+
+/**
+ * Test stub for AgentNetworkSection (to be implemented with Jest/Playwright)
+ */
+// describe('AgentNetworkSection', () => {
+//   it('renders without crashing', () => {
+//     // TODO: Add test
+//   });
+// });

@@ -1,16 +1,58 @@
 "use client";
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Settings2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
-/**
- * ChatSettings - User settings for chat experience (theme, notifications, etc.)
- * 2025 standards: glassmorphism, Bio Mech Weav SVG, accessibility, micro-interactions, responsive, Shadcn UI.
- */
+// DTO & Zod schema for settings
+type ChatSettingsDTO = {
+  notifications: boolean;
+  darkMode: boolean;
+};
+
+const settingsSchema = z.object({
+  notifications: z.boolean(),
+  darkMode: z.boolean(),
+});
+
+type SettingsForm = z.infer<typeof settingsSchema>;
+
+// Simulated API functions (replace with real API/Mastra integration)
+async function fetchSettings(): Promise<ChatSettingsDTO> {
+  // Replace with real API call
+  return { notifications: true, darkMode: false };
+}
+async function saveSettings(data: ChatSettingsDTO): Promise<ChatSettingsDTO> {
+  // Replace with real API call
+  return data;
+}
+
 export function ChatSettings() {
-  const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["chat-settings"],
+    queryFn: fetchSettings,
+  });
+  const mutation = useMutation({
+    mutationFn: saveSettings,
+    onSuccess: (data) => {
+      queryClient.setQueryData(["chat-settings"], data);
+    },
+  });
+
+  const form = useForm<SettingsForm>({
+    resolver: zodResolver(settingsSchema),
+    defaultValues: data || { notifications: true, darkMode: false },
+    values: data,
+    mode: "onChange",
+  });
+
+  // Update form when data loads
+  // (react-hook-form v7+ supports values prop for dynamic updates)
 
   return (
     <section
@@ -31,25 +73,41 @@ export function ChatSettings() {
         <Settings2 className="w-6 h-6 text-accent animate-fadeIn" />
         <h2 className="text-lg font-bold text-[var(--color-foreground)]">Chat Settings</h2>
       </header>
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-medium text-[var(--color-foreground)]">Enable Notifications</span>
-        <Switch
-          checked={notifications}
-          onCheckedChange={setNotifications}
-          aria-label="Toggle notifications"
-        />
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-medium text-[var(--color-foreground)]">Dark Mode</span>
-        <Switch
-          checked={darkMode}
-          onCheckedChange={setDarkMode}
-          aria-label="Toggle dark mode"
-        />
-      </div>
-      <Button variant="outline" className="mt-4 self-end" aria-label="Save settings">
-        <Sparkles className="w-4 h-4 mr-1" /> Save
-      </Button>
+      {isLoading ? (
+        <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>
+      ) : (
+        <form
+          onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
+          className="flex flex-col gap-5"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-medium text-[var(--color-foreground)]">Enable Notifications</span>
+            <Switch
+              checked={form.watch("notifications")}
+              onCheckedChange={(v) => form.setValue("notifications", v)}
+              aria-label="Toggle notifications"
+            />
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-medium text-[var(--color-foreground)]">Dark Mode</span>
+            <Switch
+              checked={form.watch("darkMode")}
+              onCheckedChange={(v) => form.setValue("darkMode", v)}
+              aria-label="Toggle dark mode"
+            />
+          </div>
+          <Button
+            variant="outline"
+            className="mt-4 self-end"
+            aria-label="Save settings"
+            type="submit"
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-1" />}
+            Save
+          </Button>
+        </form>
+      )}
     </section>
   );
 }

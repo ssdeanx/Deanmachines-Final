@@ -1,12 +1,19 @@
 // AI Assistant card for suggestions/actions
 import { Sparkles } from "lucide-react";
 
+/**
+ * ChatAssistantCard
+ * Suggestion/action card for AI assistant.
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for extensibility
+ */
 export default function ChatAssistantCard() {
   return (
     <section
       tabIndex={0}
       aria-label="AI Suggestion Card"
       className="relative rounded-2xl px-5 py-4 bg-card-membrane/80 backdrop-blur-xl border border-[var(--color-border)] shadow-xl transition-all hover:shadow-2xl focus:ring-2 focus:ring-accent outline-none group overflow-hidden"
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { /* future: trigger action */ } }}
     >
       {/* SVG Overlay for Bio Mech Weav theme */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-10 -z-10" aria-hidden>
@@ -30,9 +37,20 @@ export default function ChatAssistantCard() {
       <button
         className="mt-3 px-4 py-2 rounded-lg bg-primary text-white font-semibold shadow hover:bg-primary/80 transition focus:outline-none focus:ring-2 focus:ring-accent"
         aria-label="Try this suggestion"
+        tabIndex={0}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { /* future: trigger action */ } }}
       >
         Try Now
       </button>
     </section>
   );
 }
+
+/**
+ * Test stub for ChatAssistantCard (to be implemented with Jest/Playwright)
+ */
+// describe('ChatAssistantCard', () => {
+//   it('renders without crashing', () => {
+//     // TODO: Add test
+//   });
+// });

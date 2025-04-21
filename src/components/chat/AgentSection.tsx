@@ -18,6 +18,12 @@ const mockAgents: Agent[] = [
   { id: "5", name: "Market Research Agent", avatar: "📈", role: "Researcher", status: "online", skills: ["market", "trend"] },
 ];
 
+/**
+ * AgentDetailModal
+ * Modal for displaying details about an agent.
+ * @param agent - The agent object to display
+ * @param onClose - Callback to close the modal
+ */
 function AgentDetailModal({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   if (!agent) return null;
   return (
@@ -58,6 +64,12 @@ function AgentDetailModal({ agent, onClose }: { agent: Agent; onClose: () => voi
   );
 }
 
+/**
+ * AgentSection
+ * Displays all agents with search, selection, and context actions.
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for real DTOs/API
+ */
 export default function AgentSection() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
@@ -95,7 +107,11 @@ export default function AgentSection() {
   );
 
   return (
-    <section className="relative p-4 rounded-2xl bg-card-membrane/80 border border-[var(--color-border)] shadow-xl mb-6 overflow-hidden">
+    <section
+      tabIndex={0}
+      aria-label="Agent Section"
+      className="relative p-4 rounded-2xl bg-card-membrane/80 border border-[var(--color-border)] shadow-xl mb-6 overflow-hidden focus:ring-2 focus:ring-accent outline-none group"
+    >
       <Overlay />
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-bold text-xl tracking-tight flex items-center gap-2">
@@ -136,6 +152,7 @@ export default function AgentSection() {
             tabIndex={0}
             aria-label={`Agent: ${agent.name}`}
             onClick={() => setModalAgent(agent)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setModalAgent(agent); }}
             onContextMenu={(e) => {
               e.preventDefault();
               setShowMenu(agent.id);
@@ -199,3 +216,12 @@ export default function AgentSection() {
     </section>
   );
 }
+
+/**
+ * Test stub for AgentSection (to be implemented with Jest/Playwright)
+ */
+// describe('AgentSection', () => {
+//   it('renders without crashing', () => {
+//     // TODO: Add test
+//   });
+// });

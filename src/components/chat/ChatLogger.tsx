@@ -1,18 +1,44 @@
 "use client";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, ListOrdered } from "lucide-react";
+import { Sparkles, ListOrdered, Loader2 } from "lucide-react";
+
+// DTO for logs
+type ChatLogDTO = {
+  type: string;
+  message: string;
+  timestamp: string;
+};
+
+// Simulated API (replace with real Mastra/agent endpoint)
+async function fetchLogs(): Promise<ChatLogDTO[]> {
+  return [
+    { type: "INFO", message: "Chat started", timestamp: "2025-04-21 12:00" },
+    { type: "USER", message: "User sent a message", timestamp: "2025-04-21 12:01" },
+    { type: "AGENT", message: "Mastra agent responded", timestamp: "2025-04-21 12:02" },
+    { type: "ERROR", message: "Failed to fetch context", timestamp: "2025-04-21 12:03" },
+  ];
+}
 
 /**
- * ChatLogger - Displays chat logs and events for transparency/debugging.
- * 2025 standards: glassmorphism, Bio Mech Weav SVG, accessibility, micro-interactions, responsive, Shadcn UI.
+ * ChatLogger
+ * Displays chat logs with filtering and Mastra integration readiness.
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for extensibility
  */
-export function ChatLogger({ logs = [] }: { logs?: { type: string; message: string; timestamp: string }[] }) {
+export function ChatLogger() {
   const [filter, setFilter] = useState<string>("");
-  const filteredLogs = filter
-    ? logs.filter((log) => log.type.toLowerCase().includes(filter.toLowerCase()) || log.message.toLowerCase().includes(filter.toLowerCase()))
-    : logs;
+  const { data: logs, isLoading } = useQuery({
+    queryKey: ["chat-logs"],
+    queryFn: fetchLogs,
+  });
+  const filteredLogs = logs
+    ? filter
+      ? logs.filter((log) => log.type.toLowerCase().includes(filter.toLowerCase()) || log.message.toLowerCase().includes(filter.toLowerCase()))
+      : logs
+    : [];
 
   return (
     <section
@@ -41,23 +67,36 @@ export function ChatLogger({ logs = [] }: { logs?: { type: string; message: stri
         onChange={(e) => setFilter(e.target.value)}
         aria-label="Filter logs"
       />
-      <ScrollArea className="max-h-60 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-background/60">
-        {filteredLogs.length === 0 ? (
-          <div className="text-sm text-muted-foreground p-4">No logs to display.</div>
-        ) : (
-          <ul className="divide-y divide-[var(--color-border)]">
-            {filteredLogs.map((log, idx) => (
-              <li key={idx} className="flex items-start gap-3 px-3 py-2">
-                <Badge className="bg-accent text-white mr-2 min-w-[60px] text-center" aria-label={log.type}>{log.type}</Badge>
-                <span className="flex-1 text-[var(--color-foreground)]">{log.message}</span>
-                <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">{log.timestamp}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </ScrollArea>
+      {isLoading ? (
+        <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>
+      ) : (
+        <ScrollArea className="max-h-60 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-background/60">
+          {filteredLogs.length === 0 ? (
+            <div className="text-sm text-muted-foreground p-4">No logs to display.</div>
+          ) : (
+            <ul className="divide-y divide-[var(--color-border)]">
+              {filteredLogs.map((log, idx) => (
+                <li key={idx} className="flex items-start gap-3 px-3 py-2">
+                  <Badge className="bg-accent text-white mr-2 min-w-[60px] text-center" aria-label={log.type}>{log.type}</Badge>
+                  <span className="flex-1 text-[var(--color-foreground)]">{log.message}</span>
+                  <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">{log.timestamp}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </ScrollArea>
+      )}
     </section>
   );
 }
+
+/**
+ * Test stub for ChatLogger (to be implemented with Jest/Playwright)
+ */
+// describe('ChatLogger', () => {
+//   it('renders without crashing', () => {
+//     // TODO: Add test
+//   });
+// });
 
 export default ChatLogger;

@@ -1,12 +1,19 @@
 // Context panel for persistent info/docs
 import { Info } from "lucide-react";
 
+/**
+ * ChatContextPanel
+ * Persistent info/docs panel for chat.
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for extensibility
+ */
 export default function ChatContextPanel() {
   return (
     <aside
       tabIndex={0}
       aria-label="Chat Context Panel"
       className="relative w-80 min-w-[18rem] max-w-full bg-card-membrane/80 border-l border-[var(--color-border)] flex flex-col p-6 rounded-r-2xl shadow-xl backdrop-blur-xl overflow-hidden focus:ring-2 focus:ring-accent outline-none group transition-all"
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { /* future: open/close panel */ } }}
     >
       {/* Bio Mech Weav SVG Overlay */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-10 -z-10" aria-hidden>
@@ -28,3 +35,12 @@ export default function ChatContextPanel() {
     </aside>
   );
 }
+
+/**
+ * Test stub for ChatContextPanel (to be implemented with Jest/Playwright)
+ */
+// describe('ChatContextPanel', () => {
+//   it('renders without crashing', () => {
+//     // TODO: Add test
+//   });
+// });

@@ -5,7 +5,12 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Paperclip, Send, XCircle, Sparkles } from "lucide-react";
 import { useRef, useState } from "react";
 
-// Input bar for chat (multi-modal, 2025 standards)
+/**
+ * ChatInput
+ * Multi-modal chat input bar for chat panel.
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for extensibility
+ */
 export default function ChatInput() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -31,6 +36,7 @@ export default function ChatInput() {
       className="relative flex items-center gap-3 px-5 py-4 border-t border-[var(--color-border)] bg-card-membrane/80 backdrop-blur-xl rounded-b-2xl shadow-xl overflow-visible focus-within:ring-2 focus-within:ring-accent"
       aria-label="Chat input form"
       tabIndex={0}
+      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { /* future: submit */ } }}
     >
       {/* Bio Mech Weav SVG Overlay */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-10 -z-10" aria-hidden>

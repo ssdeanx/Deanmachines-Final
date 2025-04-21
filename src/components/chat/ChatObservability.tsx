@@ -6,8 +6,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { BarChart3, LineChart, AreaChart } from "lucide-react";
 
 /**
- * ChatObservability - Unified analytics/observability panel for chat, with D3, Plotly, and Recharts graphs.
- * 2025 standards: glassmorphism, Bio Mech Weav SVG, accessibility, responsive, modular, micro-interactions.
+ * ChatObservability
+ * Observability panel for chat (logs, traces, metrics)
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for extensibility
  */
 export function ChatObservability() {
   // Example data (replace with real analytics from Mastra backend)
@@ -51,5 +53,14 @@ export function ChatObservability() {
     </section>
   );
 }
+
+/**
+ * Test stub for ChatObservability (to be implemented with Jest/Playwright)
+ */
+// describe('ChatObservability', () => {
+//   it('renders without crashing', () => {
+//     // TODO: Add test
+//   });
+// });
 
 export default ChatObservability;

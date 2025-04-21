@@ -12,8 +12,13 @@ export default function ChatContextPanel() {
     <aside
       tabIndex={0}
       aria-label="Chat Context Panel"
+      role="complementary"
       className="relative w-80 min-w-[18rem] max-w-full bg-card-membrane/80 border-l border-[var(--color-border)] flex flex-col p-6 rounded-r-2xl shadow-xl backdrop-blur-xl overflow-hidden focus:ring-2 focus:ring-accent outline-none group transition-all"
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { /* future: open/close panel */ } }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          /* future: open/close panel */
+        }
+      }}
     >
       {/* Bio Mech Weav SVG Overlay */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-10 -z-10" aria-hidden>

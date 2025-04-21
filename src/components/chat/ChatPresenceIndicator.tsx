@@ -2,11 +2,25 @@
 import { Badge } from "@/components/ui/badge";
 import { Sparkles } from "lucide-react";
 
+/**
+ * ChatPresenceIndicator
+ * Presence indicator for chat (user online/away, accessible, overlays)
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for extensibility
+ */
 export default function ChatPresenceIndicator() {
   return (
-    <div className="flex items-center gap-2 px-4 py-1 rounded-xl bg-card-membrane/70 backdrop-blur shadow border border-[var(--color-border)] relative animate-fadeIn" aria-label="Presence indicator" tabIndex={0}>
+    <div
+      className="flex items-center gap-2 px-4 py-1 rounded-xl bg-card-membrane/70 backdrop-blur shadow border border-[var(--color-border)] relative animate-fadeIn"
+      aria-label="Presence indicator"
+      tabIndex={0}
+      role="status"
+    >
       {/* Bio Mech Weav SVG Overlay */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 -z-10" aria-hidden>
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none opacity-15 -z-10"
+        aria-hidden
+      >
         <defs>
           <linearGradient id="presence-fiber" x1="0" y1="0" x2="100%" y2="100%">
             <stop offset="0%" stopColor="var(--color-accent)" />

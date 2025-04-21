@@ -22,8 +22,10 @@ import { ScenarioLibraryWidget } from "./widgets/ScenarioLibraryWidget";
 import { OrgInsightsWidget } from "./widgets/OrgInsightsWidget";
 
 /**
- * ChatDashboard - Enterprise dashboard for chat analytics, observability, and insights.
- * Integrates ChatObservability and advanced widgets. 2025 standards: glassmorphism, Bio Mech Weav SVG, accessibility, responsive, modular, micro-interactions.
+ * ChatDashboard
+ * Enterprise dashboard for chat analytics, observability, and insights.
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular, scalable, and ready for extensibility
  */
 export function ChatDashboard() {
   return (
@@ -83,3 +85,12 @@ export function ChatDashboard() {
 }
 
 export default ChatDashboard;
+
+/**
+ * Test stub for ChatDashboard (to be implemented with Jest/Playwright)
+ */
+// describe('ChatDashboard', () => {
+//   it('renders without crashing', () => {
+//     // TODO: Add test
+//   });
+// });

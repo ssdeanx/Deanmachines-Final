@@ -91,8 +91,10 @@ const mockMessages: Record<string, Message[]> = {
 
 
 /**
- * ChatMessageList component - renders a scrollable list of chat messages for the active conversation.
- * Uses the Message type from ChatMessage for consistency and maintainability.
+ * ChatMessageList
+ * Renders a scrollable list of chat messages for the active conversation.
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for extensibility
  */
 export default function ChatMessageList() {
   const { activeConversation } = useContext(ChatConversationContext);
@@ -152,4 +154,12 @@ export default function ChatMessageList() {
   );
 }
 
+/**
+ * Test stub for ChatMessageList (to be implemented with Jest/Playwright)
+ */
+// describe('ChatMessageList', () => {
+//   it('renders without crashing', () => {
+//     // TODO: Add test
+//   });
+// });
 

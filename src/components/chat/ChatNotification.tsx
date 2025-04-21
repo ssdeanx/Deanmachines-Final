@@ -3,6 +3,12 @@ import { Toaster } from "@/components/ui/sonner";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Sparkles } from "lucide-react";
 
+/**
+ * ChatNotification
+ * Renders a Sonner notification styled for Bio Mech Weav, with accessibility and overlays.
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for extensibility
+ */
 export default function ChatNotification({ message }: { message: string }) {
   // This component renders a Sonner notification styled for Bio Mech Weav
   return (

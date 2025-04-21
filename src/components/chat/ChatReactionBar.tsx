@@ -2,7 +2,12 @@
 import { Button } from "@/components/ui/button";
 import { Sparkles, Plus } from "lucide-react";
 
-// Emoji/reaction bar for messages
+/**
+ * ChatReactionBar
+ * Emoji/reaction bar for messages, fully accessible and styled with Bio Mech Weav overlays.
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for extensibility
+ */
 export default function ChatReactionBar({ reactions }: { reactions: Record<string, number> }) {
   const emojis = Object.keys(reactions);
   return (

@@ -2,7 +2,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 
-// Search bar for chat messages (2025 standards)
+/**
+ * ChatSearch
+ * Search bar for chat messages (2025 standards).
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for extensibility
+ */
 export default function ChatSearch() {
   return (
     <form className="relative flex items-center gap-2 px-3 py-2 bg-card-membrane/80 border-b border-[var(--color-border)] rounded-t-xl shadow focus-within:ring-2 focus-within:ring-accent" aria-label="Chat search" tabIndex={0}>

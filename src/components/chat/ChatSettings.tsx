@@ -31,6 +31,12 @@ async function saveSettings(data: ChatSettingsDTO): Promise<ChatSettingsDTO> {
   return data;
 }
 
+/**
+ * ChatSettings
+ * Settings form for chat preferences (notifications, dark mode, etc.).
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for extensibility
+ */
 export function ChatSettings() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
@@ -113,3 +119,12 @@ export function ChatSettings() {
 }
 
 export default ChatSettings;
+
+/**
+ * Test stub for ChatSettings (to be implemented with Jest/Playwright)
+ */
+// describe('ChatSettings', () => {
+//   it('renders without crashing', () => {
+//     // TODO: Add test
+//   });
+// });

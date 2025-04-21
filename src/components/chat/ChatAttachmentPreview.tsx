@@ -13,7 +13,12 @@ export default function ChatAttachmentPreview() {
       tabIndex={0}
       aria-label="File attachment preview"
       className="relative flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-card-membrane/80 p-3 shadow-xl hover:shadow-2xl focus:ring-2 focus:ring-accent outline-none group overflow-hidden transition-all"
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { /* future: remove file */ } }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          // future: remove file
+        }
+      }}
+      role="button"
     >
       {/* Bio Mech Weav SVG Overlay */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-10 -z-10" aria-hidden>

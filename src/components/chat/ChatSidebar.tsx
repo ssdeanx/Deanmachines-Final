@@ -23,8 +23,10 @@ import ChatLogger from "./ChatLogger";
 
 
 /**
- * ChatSidebar component - renders the sidebar with pinned and regular conversations.
- * Uses Bio-Mechanical Weave theme, accessibility, and modern UI best practices.
+ * ChatSidebar
+ * Renders the sidebar with pinned and regular conversations, settings, and agent/tool/memory/workflow sections.
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular, scalable, and ready for extensibility
  */
 export default function ChatSidebar() {
   // Context provides the global conversations, active conversation, and setter

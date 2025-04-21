@@ -8,6 +8,12 @@ const PROVIDERS = [
   { label: "Custom", value: "custom", models: ["custom-model"] },
 ];
 
+/**
+ * ChatProviderSettings
+ * Provider settings panel for chat (AI model, endpoint, etc)
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for extensibility
+ */
 export default function ChatProviderSettings() {
   const { config, setConfig } = useChatAIProvider();
   const [apiKeyInput, setApiKeyInput] = useState(config.apiKey);
@@ -15,7 +21,21 @@ export default function ChatProviderSettings() {
   const providerObj = PROVIDERS.find((p) => p.value === config.provider) || PROVIDERS[0];
 
   return (
-    <section className="p-4 rounded-xl bg-card-membrane/80 border border-[var(--color-border)] shadow-md mb-4">
+    <section
+      className="relative p-4 rounded-xl bg-card-membrane/80 border border-[var(--color-border)] shadow-md mb-4 focus-within:ring-2 focus-within:ring-accent"
+      aria-label="AI Provider Settings"
+      tabIndex={0}
+    >
+      {/* Bio Mech Weav SVG Overlay */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-10 -z-10" aria-hidden>
+        <defs>
+          <linearGradient id="provider-fiber" x1="0" y1="0" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="var(--color-accent)" />
+            <stop offset="100%" stopColor="var(--color-primary)" />
+          </linearGradient>
+        </defs>
+        <path d="M0,12 Q48,24 96,12 T192,12" fill="none" stroke="url(#provider-fiber)" strokeWidth="4" opacity="0.13" />
+      </svg>
       <h2 className="font-bold text-lg mb-2">AI Provider Settings</h2>
       <div className="mb-2">
         <label className="block text-sm font-semibold mb-1">Provider</label>

@@ -13,15 +13,23 @@ export type Conversation = {
 };
 
 export type ChatConversationContextType = {
+  /**
+   * Active conversation
+   */
   activeConversation: Conversation | null;
+  /**
+   * Set active conversation
+   */
   setActiveConversation: (conv: Conversation) => void;
+  /**
+   * List of conversations
+   */
   conversations: Conversation[];
 };
 
 /**
- * ChatConversationContext
- * Context for managing chat conversations, ready for Mastra DTOs and extensibility.
- * - Type-safe, modular, extensible, and accessible.
+ * Chat conversation context
+ * - Modular, type-safe, extensible, and accessible
  */
 export const ChatConversationContext = createContext<ChatConversationContextType>({
   activeConversation: null,

@@ -33,6 +33,12 @@ export interface ChatMessageProps {
  * ChatMessage component - renders a single chat message (text, code, or image),
  * with author, avatar, timestamp, reactions, and thread. Fully typed and accessible.
  */
+/**
+ * ChatMessage
+ * Renders a single chat message (text, code, or image) with author, avatar, timestamp, reactions, and thread.
+ * - Bio Mech Weav overlays, glassmorphism, accessibility, micro-interactions
+ * - Modular and ready for extensibility
+ */
 export default function ChatMessage({ message, isOwn }: ChatMessageProps) {
   if (!message) {
     return (

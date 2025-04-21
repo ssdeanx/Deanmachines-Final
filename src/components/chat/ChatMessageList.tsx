@@ -98,7 +98,7 @@ export default function ChatMessageList() {
   const { activeConversation } = useContext(ChatConversationContext);
   if (!activeConversation) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-8 text-muted-foreground">
+      <div className="flex flex-col items-center justify-center h-full p-8 text-muted-foreground" aria-label="No active conversation selected" tabIndex={0}>
         No active conversation selected.
       </div>
     );
@@ -117,14 +117,15 @@ export default function ChatMessageList() {
 
   return (
     <div
-      className="flex flex-col gap-2 px-4 py-2 overflow-y-auto bg-card-membrane/60 backdrop-blur-lg rounded-xl shadow-[0_0_18px_3px_var(--color-accent)] border border-[var(--color-border)] relative"
+      className="flex flex-col gap-3 px-6 py-3 overflow-y-auto bg-card-membrane/70 backdrop-blur-xl rounded-2xl shadow-2xl border border-[var(--color-border)] relative focus-within:ring-2 focus-within:ring-accent"
       ref={ref}
       aria-label="Chat messages"
+      tabIndex={0}
     >
-      {/* SVG Fiber Overlay for Bio-Mechanical Weave */}
+      {/* Bio Mech Weav SVG Overlay */}
       <svg
         className="absolute inset-0 w-full h-full pointer-events-none opacity-10 -z-10"
-        aria-hidden="true"
+        aria-hidden
       >
         <defs>
           <linearGradient id="list-fiber" x1="0" y1="0" x2="100%" y2="100%">

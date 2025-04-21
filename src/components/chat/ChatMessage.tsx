@@ -1,6 +1,7 @@
 "use client";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Sparkles } from "lucide-react";
 import ChatReactionBar from "./ChatReactionBar";
 import ChatThread from "./ChatThread";
 
@@ -25,16 +26,6 @@ function cn(...args: (string | undefined | false | null)[]) {
 
 export interface ChatMessageProps {
   message: Message;
-  isOwn?: boolean;
-}
-
-// Simple cn utility for conditional class names
-function cn(...args: (string | undefined | false | null)[]) {
-  return args.filter(Boolean).join(' ');
-}
-
-export interface ChatMessageProps {
-  message: any;
   isOwn?: boolean;
 }
 

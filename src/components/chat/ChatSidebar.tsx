@@ -4,8 +4,9 @@ import { ChatConversationContext } from "./ChatConversationContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sparkles, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 // Import Conversation type from context for type safety and consistency
 import type { Conversation } from "./ChatConversationContext";
 // New sections
@@ -17,6 +18,8 @@ import WorkflowSection from "./WorkflowSection";
 import AgentNetworkSection from "./AgentNetworkSection";
 import TraceSection from "./TraceSection";
 import EvalSection from "./EvalSection";
+import ChatSettings from "./ChatSettings";
+import ChatLogger from "./ChatLogger";
 
 
 /**
@@ -64,6 +67,11 @@ export default function ChatSidebar() {
 
       {/* Provider/Model/API Key Section */}
       <ChatProviderSettings />
+      {/* Settings Section */}
+      <section className="mt-4 mb-2 px-2">
+        <h3 className="text-xs font-semibold text-[var(--color-muted-foreground)] uppercase tracking-wide mb-1 pl-2">Settings</h3>
+        <ChatSettings />
+      </section>
       {/* Agents Section */}
       <AgentSection />
       {/* Tools Section */}
@@ -76,13 +84,18 @@ export default function ChatSidebar() {
       <AgentNetworkSection />
       {/* Traces Section */}
       <TraceSection />
+      {/* Logger Section */}
+      <section className="mt-4 mb-2 px-2">
+        <h3 className="text-xs font-semibold text-[var(--color-muted-foreground)] uppercase tracking-wide mb-1 pl-2">Logger</h3>
+        <ChatLogger />
+      </section>
       {/* Evals Section */}
       <EvalSection />
 
       <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center justify-between mt-2">
         <span className="font-bold text-lg tracking-tight text-[var(--color-foreground)]">Chats</span>
         <Button variant="ghost" size="icon" aria-label="New chat" className="transition-all hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]">
-          <span className="text-2xl">+</span>
+          <Plus className="w-5 h-5 text-accent" />
         </Button>
       </div>
       <ScrollArea className="flex-1 overflow-y-auto">

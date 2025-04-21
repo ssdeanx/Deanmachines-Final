@@ -18,14 +18,21 @@ export type ChatConversationContextType = {
   conversations: Conversation[];
 };
 
+// Context for managing chat conversations, ready for Mastra DTOs and extensibility
 export const ChatConversationContext = createContext<ChatConversationContextType>({
   activeConversation: null,
   setActiveConversation: () => {},
   conversations: [],
 });
 
+/**
+ * ChatConversationProvider wraps children with conversation context.
+ * - Prepares for real Mastra DTOs (normalized, typed data)
+ * - Extensible for features like pinning, presence, unread, etc.
+ * - Ensures accessibility and modularity.
+ */
 export function ChatConversationProvider({ children }: { children: ReactNode }) {
-  // Same mock data as sidebar
+  // TODO: Replace mock data with normalized DTOs from Mastra API
   const [conversations, setConversations] = useState<Conversation[]>([
     {
       id: "1",
@@ -64,7 +71,10 @@ export function ChatConversationProvider({ children }: { children: ReactNode }) 
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(conversations[0]);
 
   return (
-    <ChatConversationContext.Provider value={{ activeConversation, setActiveConversation, conversations }}>
+    <ChatConversationContext.Provider
+      value={{ activeConversation, setActiveConversation, conversations }}
+      aria-label="Active chat conversation context"
+    >
       {children}
     </ChatConversationContext.Provider>
   );

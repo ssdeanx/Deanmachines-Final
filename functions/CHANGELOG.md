@@ -7,6 +7,247 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.0.15] - 2025-04-20
+
+### Added
+
+- **Puppeteer Tool (`puppeteerTool.ts`)** Needs fixed causes stream to crash.
+Trace
+Trace Id
+Started	Total Duration
+
+stream
+b1052f4e30ebab490748d50db729b901	4/20/2025, 9:51:12 AM	15.861ms
+
+stream
+8642fc5243ae5610e419a4431b792779	4/20/2025, 9:49:01 AM	1924.593ms
+
+__registerMastra
+9337ac666c23e33bd1f6b85d98daf44a	4/20/2025, 9:48:45 AM	0.007ms
+
+__registerMastra
+e85fb9fff96413107517aac82da2e943	4/20/2025, 9:48:45 AM	0.005ms
+
+__registerMastra
+e39c38bd34ca5e5cbc47a2d6a32cd057	4/20/2025, 9:48:45 AM	0.005ms
+
+__registerMastra
+1fc4f91de6d279050eca05ef2f5d598e	4/20/2025, 9:48:45 AM	0.051ms
+
+__registerPrimitives
+93250cfc44aaf1d882d180aa4fe39b13	4/20/2025, 9:48:45 AM	0.096ms
+
+__registerMastra
+2744379f4f8e815785ebaddaa4830add	4/20/2025, 9:48:45 AM	0.391ms
+
+__registerPrimitives
+629c2ccf8f2b4bc80f8867c4ef9ef0de	4/20/2025, 9:48:45 AM	0.168ms
+
+  - Implemented a new Mastra tool (`puppeteer_web_automator`) for advanced browser automation using Puppeteer.
+  - Supports navigating to URLs, executing a sequence of actions (click, type, scrape, wait, scroll, hover, select, evaluate), taking screenshots, and extracting data.
+  - Includes robust action schemas defined with Zod for type safety and validation.
+  - Provides detailed logging for each step of the automation process.
+- **Knowledge Base Integration (`puppeteerTool.ts`)**
+  - Integrated `writeKnowledgeFileTool` (from `readwrite.ts`) into `puppeteerTool`.
+  - Added input options (`saveKnowledgeFilename`, `saveFormat`, `saveMode`, `saveEncoding`) to allow users to optionally save scraped data directly to the knowledge base.
+  - Handles formatting scraped data into JSON or basic CSV before saving.
+  - Includes error handling and status reporting for the save operation in the tool's output.
+- **Observability (`puppeteerTool.ts`)**
+  - Integrated SigNoz tracing (`createAISpan`, `recordMetrics`) into `puppeteerTool`.
+  - Creates a span for each tool execution, recording input parameters, key events (navigation, actions, saving), latency, final status (success/error), and exceptions.
+  - Provides detailed observability into the tool's performance and behavior.
+- **Tool Registration (`index.ts`)**
+  - Imported and registered `puppeteerTool` in the main tool barrel file (`src/mastra/tools/index.ts`).
+  - Added `puppeteerTool` to `allTools`, `allToolsMap`, and `toolGroups` for unified tool discovery and registration.
+
+---
+
+## [v0.0.14] - 2025-04-19
+
+### Added
+
+- **Agent Usage Standardization**
+  - All agents (researchAgent, analystAgent, writerAgent, copywriterAgent, etc.) now use the `.generate()` method as the standard command for invoking agent logic within workflows and other orchestration code.
+  - This change ensures consistency and type safety across all workflow steps and agent integrations.
+
+#### Example Usage
+
+The following code snippet demonstrates the new standard for invoking agents:
+
+```typescript
+// Correct usage for all agents in workflow steps:
+const { text } = await researchAgent.generate(queryInput);
+const { text } = await analystAgent.generate(researchResult);
+const { text } = await writerAgent.generate(analysisResult);
+const { text } = await copywriterAgent.generate(writingResult);
+```
+
+- All previous usages of `.run`, `.call`, `.chat`, or direct function invocation have been replaced with `.generate()` for clarity and compatibility with the Mastra agent API.
+
+### Changed
+
+- Updated all workflow steps in `multiagentWorkflow.ts` and related files to use `.generate()` for agent execution.
+- Improved documentation and inline comments to clarify the `.generate()` pattern for future maintainers.
+
+### Notes
+
+- The `.generate()` method is now the **only supported way** to invoke agent logic in this codebase.
+- This standardization prevents confusion and runtime errors related to agent invocation.
+- Please update any custom agents or tools to implement a `.generate()` method if they do not already.
+
+---
+
+## [v0.0.13] - 2025-04-19
+
+### Added
+
+- **mcptool.ts**
+  - Added `createMastraMcpTools` helper for robust async MCP tool loading, supporting multiple MCP servers (`mastra`, `sequentialthinking`, and a custom `socat` TCP relay).
+  - Ensured only Mastra-native helpers and types are used (no `@agentic/mastra`).
+  - Ready for direct use in agent and tool registry initialization.
+  - Added `@smithery/toolbox` MCP server configuration. Smithery Toolbox MCP tools are now auto-discovered and available to agents.
+  - Docker-based socat relay MCP server is now included and confirmed working.
+  - Both Smithery.ai MCP tools and the custom Docker server are connected and operational, as verified by successful tool initialization logs.
+  - Improved error handling and logging for MCP tool initialization.
+
+- **index.ts (tool barrel)**
+  - Integrated async MCP tool initialization using `createMastraMcpTools` in the extra tools section.
+  - MCP tools are now loaded and available to agents via `allTools`, `allToolsMap`, and `toolGroups`.
+  - Added `export * from "./mcptool";` for unified exports.
+  - Provided clear comments and error handling for async tool loading.
+  - MCP tools from Smithery.ai and Docker are now included in the unified tool registry and available to all agents.
+
+### Changed
+
+- **Polygon Tools**
+  - Cleaned up and finalized Polygon tool schemas and registration.
+  - Ensured all Polygon endpoints and schemas are patched and exported for agent use.
+
+- **General**
+  - Improved documentation and inline comments for MCP and Polygon tool integration.
+  - Clarified async initialization pattern for tool registry to support MCP and other async tools.
+  - Confirmed robust async initialization and registration of all MCP tools, including Smithery Toolbox and Docker relay, with successful connection and tool loading logs.
+
+### Fixed
+
+- Removed all references to `@agentic/mastra` in MCP tool loading to prevent cross-package errors.
+- Ensured MCP tools are loaded asynchronously and safely, with robust error logging.
+- Confirmed all tools (including MCP, Polygon, Reddit, etc.) are discoverable and usable by agents.
+- Ensured all MCP servers (Smithery Toolbox and Docker) are reachable and tools are loaded without errors.
+- Improved error logging for MCP initialization failures.
+
+### Notes
+
+- MCP tools now follow the Mastra pattern: async loading, explicit Zod schemas, and unified exports.
+- Smithery.ai MCP tools and Docker-based MCP server are now fully integrated and operational in the Mastra tool registry.
+- Initialization logs confirm all MCP tools are connected and available for agent use.
+- All changes linted and type-checked after edits.
+- Next steps: Continue to document new tool patterns and agent integration in this changelog for future maintainers.
+
+---
+
+## [v0.0.12] - 2025-04-19
+
+### Added
+
+- **arxiv.ts**
+  - Implemented `arxiv_download_pdf` tool: Downloads a PDF for a given arXiv ID and saves it to disk using `fs-extra` and `ky`. Ensures directory creation and robust file writing.
+  - All arXiv tools now have explicit Zod output schemas (`ArxivSearchOutputSchema`, `ArxivPdfUrlOutputSchema`, `ArxivDownloadPdfOutputSchema`).
+  - Patched all arXiv tool output schemas in `createMastraArxivTools` for Mastra compatibility.
+  - Improved `extractId` utility for robust arXiv ID parsing.
+  - Cleaned up namespace and type exports for clarity.
+
+- **polygon.ts**
+  - Productionized MastraPolygonClient: Now requires and validates `POLYGON_API_KEY` from environment or config.
+  - Added robust error handling for API failures.
+  - Explicitly patched `tickerDetails` output schema for Mastra compatibility.
+  - Exported `TickerDetailsSchema` for downstream use and type safety.
+
+- **reddit.ts**
+  - Expanded `SubredditPostSchema` to include all relevant Reddit post fields.
+  - Added error handling to Reddit tool methods.
+  - Patched `getSubredditPosts` output schema for Mastra compatibility.
+  - Exported `SubredditPostSchema` for downstream use and type safety.
+
+- **index.ts (tool barrel)**
+  - Ensured all tools (`arxiv`, `polygon`, `reddit`, etc.) are exported using `export * from ...` for unified tool registration.
+  - Added `POLYGON_API_KEY` to `envSchema` for environment validation.
+  - Exported all relevant schemas (`TickerDetailsSchema`, `SubredditPostSchema`, etc.) for agent and workflow configs.
+  - Confirmed all tools are discoverable via `allTools`, `allToolsMap`, and `toolGroups`.
+
+- **Agent Integration**
+  - Updated agent creation logic to resolve tools from `allToolsMap` using tool IDs.
+  - Added robust error logging and throwing for missing tools in agent configs.
+  - Ensured all tools (including new/updated ones) are available to agents via the barrel file.
+
+### Changed
+
+- **General**
+  - Standardized tool registration and output schema patching across all Mastra tools.
+  - Improved documentation and inline comments for tool and agent registration patterns.
+  - Cleaned up and clarified environment variable requirements in `envSchema`.
+
+### Fixed
+
+- Ensured all tools have explicit output schemas and are patched at registration, preventing runtime errors in Mastra workflows.
+- Fixed tool discovery and registration issues for new tools (arxiv, polygon, reddit) by updating the barrel file and tool initialization logic.
+
+### Notes
+
+- All new and updated tools follow the Mastra pattern: explicit Zod schemas, output schema patching, and unified exports.
+- Agents now reliably resolve and use all registered tools, with clear error messages if a tool is missing.
+- Next steps: Continue to lint and type-check after every file edit, and document any new tool or agent patterns in this changelog for future maintainers.
+
+---
+
+## [v0.0.11] - 2025-04-19 12:00 UTC
+
+### Added
+
+- **fileLogger.ts**  
+  • Switched to `fs‑extra` (`ensureDirSync`/`ensureFileSync`) so `logs/mastra.log` is created automatically.  
+  • Retains full JSON‑line format and log levels.
+
+- **upstashLog.ts**  
+  • Exposed `createUpstashLogger()` factory and `upstashLogger` default instance.  
+  • Normalizes the Redis REST URL with `https://` to satisfy `new URL()`.  
+  • Re‑exports `UpstashTransport` for advanced use.
+
+- **consoleLogger.ts**  
+  • Simple in‑process console transport with `debug`/`info`/`warn`/`error` and timestamped prefixes.
+
+- **tracing.ts & signoz.ts**  
+  • `initializeDefaultTracing()` auto‑instruments Node + graceful shutdown.  
+  • `initSigNoz()` configures OTLP exporter, tracer + meter, periodic metric reader.
+
+- **base.agent.ts**  
+  • Imported and wired:
+    - `consoleLogger`, `upstashLogger`, `fileLogger` under a unified `logger` API.  
+    - OpenTelemetry via `initializeDefaultTracing()`.  
+    - SigNoz tracer + meter via `initSigNoz()`.  
+  • Created spans around agent lifecycle (`agent.create`, `agent.debug/info/warn/error`).  
+  • Recorded metrics (`agent.creation.count`, `agent.creation.latency_ms`).  
+  • **Voice integration is stubbed**—the `createGoogleVoice()` import and `voice` prop in the `Agent` constructor are commented out because real‑time streaming (connect, listen, speaker events) is not yet implemented.  
+
+- **voice/googlevoice.ts & voice/index.ts**  
+  • Exposed `createGoogleVoice()` and barrel‑exported from `index.ts`.  
+  • Configured `CompositeVoice` with tool injection and global instructions.  
+  • Did **not** hook into BaseAgent because real‑time support is pending.
+
+### Fixed
+
+- Avoid “File path does not exist” by auto‑creating directories/files in `fileLogger.ts`.  
+- Prevent `ERR_INVALID_URL` in Upstash by prefixing missing `https://`.
+
+### Notes
+
+- Voice support is **half‑complete**. All voice factory code is in place, but in `base.agent.ts` it remains commented out.  
+- **Next steps**:
+  1. Wire a real‑time STT/TTS provider (e.g. Google streaming API).  
+  2. Hook up `voice.connect()`, `voice.on("listen")`, `voice.on("speaker")`.  
+  3. Pass the active `voice` instance into the `Agent` constructor.  
+  4. Un‑comment the `voice` lines and verify end‑to‑end audio streaming.
+
 ## [v0.0.10] - 2025-04-16
 
 ### Added
@@ -75,7 +316,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ensured all lint/type errors are fixed after every file edit.  
 - Updated README and documentation to reflect new memory, RAG, and workflow patterns.  
 - Added csv-reader, docx-reader, tools  
-  
+ 
 - Date: 2025-04-15  
 - Time: 15:00 UTC
 
@@ -102,7 +343,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - cheerio: For parsing HTML content (from files or web pages).
   - node-fetch: For reliably fetching documents from URLs.
 - Implementation: These packages should be utilized within a new Mastra AI Tool (e.g., readDocumentContent). This tool will inspect the input file path or URL, determine the likely document type (based on extension or potentially content-type for URLs), and invoke the appropriate parsing library to return the extracted text content for further processing by the agent.
--
+- 
 
 ## [v0.0.5] - 2025-04-15
 
@@ -169,7 +410,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed throttle type mismatches and replaced unsupported string methods for broader TypeScript compatibility.
 - Lint and type errors resolved across all affected files.
 
-## [0.0.2] - 2025-04-14
+## [v0.0.2] - 2025-04-14
 
 ### Added
 
@@ -192,7 +433,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated dependencies to address potential vulnerabilities
 
-## [0.0.1] - 2025-04-01
+## [v0.0.1] - 2025-04-01
 
 ### Added
 

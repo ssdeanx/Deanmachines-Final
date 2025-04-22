@@ -7,7 +7,7 @@
 
 import { createTool, ToolExecutionContext } from "@mastra/core/tools";
 import { z } from "zod";
-import fs from "fs-extra";
+import * as fs from "fs-extra";
 
 import { resolve, dirname, extname, join } from "path";
 import { createLangSmithRun, trackFeedback } from "../services/langsmith";
@@ -133,6 +133,11 @@ export const readFileTool = createTool({
       // Resolve the absolute path
       const absolutePath = resolve(context.path);
 
+      // Ensure the file path is valid
+      if (!absolutePath) {
+        throw new Error("Invalid file path");
+      }
+
       // Check if the file exists
       try {
         await fs.access(absolutePath);
@@ -185,10 +190,14 @@ export const readFileTool = createTool({
       }
 
       // Read the file
-      const content = await fs.readFile(absolutePath, context.encoding);
-      const contentString = content.toString();
-      let processedContent = contentString;
-      const allLines = contentString.split(/\r?\n/); // Now this works!
+      // Pass encoding in options object for clearer type inference
+      const content = await fs.readFile(absolutePath, context.encoding as BufferEncoding);
+      // Ensure content is a string (should be, given encoding option)
+      if (typeof content !== "string") {
+        throw new Error("File content is not a string. Check encoding.");
+      }
+      let processedContent = content;
+      const allLines = content.split(/\r?\n/);
       let readLines = allLines.length;
       if (context.startLine !== undefined || context.endLine !== undefined) {
         const startLine = Math.max(0, context.startLine || 0);
@@ -325,10 +334,7 @@ export const writeToFileTool = createTool({
     error: z.string().optional().describe("Error message if the operation failed"),
   }),
   execute: async (
-    executionContext: ToolExecutionContext<
-      z.infer<typeof WriteFileInputSchema>,
-      z.infer<typeof WriteFileOutputSchema>
-    >
+    executionContext: ToolExecutionContext<typeof WriteFileInputSchema>
   ) => {
     const { context } = executionContext;
     const runId = await createLangSmithRun("write-file", ["file", "write"]);
@@ -337,12 +343,20 @@ export const writeToFileTool = createTool({
       // Resolve the absolute path
       const absolutePath = resolve(context.path);
 
+      // Ensure the file path is valid
+      if (!absolutePath) {
+        throw new Error("Invalid file path");
+      }
+
+      // Ensure maxSizeBytes is set (fallback to default if missing)
+      const maxSizeBytes = context.maxSizeBytes ?? 10485760;
+
       // Check content size
-      const contentSize = Buffer.byteLength(context.content, context.encoding);
-      if (contentSize > context.maxSizeBytes) {
+      const contentSize = Buffer.byteLength(context.content, context.encoding as BufferEncoding);
+      if (contentSize > maxSizeBytes) {
         await trackFeedback(runId, {
           score: 0,
-          comment: `Content too large: ${contentSize} bytes (max: ${context.maxSizeBytes} bytes)`,
+          comment: `Content too large: ${contentSize} bytes (max: ${maxSizeBytes} bytes)`,
           key: "file_write_failure",
         });
 
@@ -355,7 +369,7 @@ export const writeToFileTool = createTool({
             mode: context.mode,
           },
           success: false,
-          error: `Content too large: ${contentSize} bytes (max: ${context.maxSizeBytes} bytes)`,
+          error: `Content too large: ${contentSize} bytes (max: ${maxSizeBytes} bytes)`,
         };
       }
 
@@ -396,9 +410,9 @@ export const writeToFileTool = createTool({
 
       // Write or append to the file based on the mode
       if (context.mode === FileWriteMode.APPEND && fileExists) {
-        await fs.appendFile(absolutePath, context.content, context.encoding);
+        await fs.appendFile(absolutePath, context.content, { encoding: context.encoding });
       } else {
-        await fs.writeFile(absolutePath, context.content, context.encoding);
+        await fs.writeFile(absolutePath, context.content, { encoding: context.encoding });
       }
 
       // Track success in LangSmith
@@ -447,47 +461,13 @@ export const writeToFileTool = createTool({
 export const readKnowledgeFileTool = createTool({
   id: "read-knowledge-file",
   description: "Reads a file from the knowledge folder",
-  inputSchema: z.object({
-    path: z.string().describe("Path relative to knowledge folder"),
-    encoding: z
-      .enum([
-        FileEncoding.UTF8,
-        FileEncoding.ASCII,
-        FileEncoding.UTF16LE,
-        FileEncoding.LATIN1,
-        FileEncoding.BASE64,
-        FileEncoding.HEX,
-      ])
-      .default(FileEncoding.UTF8),
-    maxSizeBytes: z.number().optional().default(10485760),
-  }),
-  outputSchema: z.object({
-    content: z.string().describe("Content of the file"),
-    metadata: z.object({
-      path: z.string().describe("Absolute path to the file"),
-      size: z.number().describe("Size of the file in bytes"),
-      extension: z.string().describe("File extension"),
-      encoding: z.string().describe("Encoding used to read the file"),
-      lineCount: z.number().describe("Total number of lines in the file"),
-      readLines: z.number().describe("Number of lines read"),
-    }),
-    success: z.boolean().describe("Whether the operation was successful"),
-    error: z
-      .string()
-      .optional()
-      .describe("Error message if the operation failed"),
-  }),
+  inputSchema: ReadKnowledgeFileInputSchema, // Use imported schema
+  outputSchema: ReadKnowledgeFileOutputSchema, // Use imported schema
   execute: async (
-    executionContext: ToolExecutionContext<
-      z.infer<typeof ReadKnowledgeFileInputSchema>,
-      z.infer<typeof ReadKnowledgeFileOutputSchema>
-    >
+    executionContext: ToolExecutionContext<typeof ReadKnowledgeFileInputSchema>
   ) => {
     const { context } = executionContext;
-    const runId = await createLangSmithRun("read-knowledge-file", [
-      "knowledge",
-      "read",
-    ]);
+    const runId = await createLangSmithRun("read-knowledge-file", ["knowledge", "read"]);
 
     try {
       const knowledgePath = resolveKnowledgePath(context.path);
@@ -501,9 +481,23 @@ export const readKnowledgeFileTool = createTool({
         throw new Error("readFileTool.execute is not defined");
       }
 
-      // Modify context to use knowledge path and provide default startLine
-      return readFileTool.execute({
-        context: { ...context, path: knowledgePath, startLine: 0 },
+      // Modify context to use knowledge path and provide default startLine and maxSizeBytes
+      // Also pass the container from the current execution context
+      return await readFileTool.execute({
+        container: executionContext.container, // Pass the container
+        context: {
+          ...context,
+          path: knowledgePath,
+          // Cast encoding to FileEncoding to match readFileTool's input schema
+          encoding: context.encoding as FileEncoding,
+          startLine: 0,
+          maxSizeBytes: 10485760, // Add default maxSizeBytes from readFileTool schema
+        },
+        // Pass along other relevant execution context details if needed
+        runId: executionContext.runId,
+        threadId: executionContext.threadId,
+        resourceId: executionContext.resourceId,
+        mastra: executionContext.mastra,
       });
     } catch (error) {
       console.error("Error reading knowledge file:", error);
@@ -535,31 +529,12 @@ export const readKnowledgeFileTool = createTool({
   },
 });
 
+// Use the imported WriteKnowledgeFileInputSchema and WriteKnowledgeFileOutputSchema
+
 export const writeKnowledgeFileTool = createTool({
   id: "write-knowledge-file",
   description: "Writes content to a file in the knowledge folder",
-  inputSchema: z.object({
-    path: z.string().describe("Path relative to knowledge folder"),
-    content: z.string(),
-    mode: z
-      .enum([
-        FileWriteMode.OVERWRITE,
-        FileWriteMode.APPEND,
-        FileWriteMode.CREATE_NEW,
-      ])
-      .default(FileWriteMode.OVERWRITE),
-    encoding: z
-      .enum([
-        FileEncoding.UTF8,
-        FileEncoding.ASCII,
-        FileEncoding.UTF16LE,
-        FileEncoding.LATIN1,
-        FileEncoding.BASE64,
-        FileEncoding.HEX,
-      ])
-      .default(FileEncoding.UTF8),
-    createDirectory: z.boolean().optional().default(true),
-  }),
+  inputSchema: WriteKnowledgeFileInputSchema,
   outputSchema: z.object({
     metadata: z.object({
       path: z.string().describe("Absolute path to the file"),
@@ -575,16 +550,10 @@ export const writeKnowledgeFileTool = createTool({
       .describe("Error message if the operation failed"),
   }),
   execute: async (
-    executionContext: ToolExecutionContext<
-      z.infer<typeof WriteKnowledgeFileInputSchema>,
-      z.infer<typeof WriteKnowledgeFileOutputSchema>
-    >
+    executionContext: ToolExecutionContext<typeof WriteKnowledgeFileInputSchema>
   ) => {
-    const { context, container } = executionContext;
-    const runId = await createLangSmithRun("write-knowledge-file", [
-      "knowledge",
-      "write",
-    ]);
+    const { context } = executionContext;
+    const runId = await createLangSmithRun("write-knowledge-file", ["knowledge", "write"]);
 
     try {
       const knowledgePath = resolveKnowledgePath(context.path);
@@ -599,14 +568,11 @@ export const writeKnowledgeFileTool = createTool({
       }
 
       // Modify context to use knowledge path and include default maxSizeBytes
-      // Also pass the container from the current execution context
       return writeToFileTool.execute({
-        container, // Pass the container
+        container: executionContext.container, // Pass the container
         context: {
           ...context,
           path: knowledgePath,
-          // Provide the default value from writeToFileTool's schema
-          maxSizeBytes: 100485760,
         },
       });
     } catch (error) {
@@ -653,6 +619,7 @@ export const createFileTool = createTool({
       FileEncoding.HEX,
     ]).default(FileEncoding.UTF8),
     createDirectory: z.boolean().optional().default(false),
+    maxSizeBytes: z.number().optional().default(10485760).describe("Maximum content size in bytes (default: 10MB)"),
   }),
   outputSchema: z.object({
     metadata: z.object({
@@ -665,13 +632,16 @@ export const createFileTool = createTool({
     error: z.string().optional(),
   }),
   execute: async (
-    executionContext: ToolExecutionContext<
-      z.infer<typeof CreateFileInputSchema>,
-      z.infer<typeof CreateFileOutputSchema>
-    >
+    executionContext // Let TypeScript infer the type
   ) => {
     const { context } = executionContext;
     const absolutePath = resolve(context.path);
+
+    // Ensure the file path is valid
+    if (!absolutePath) {
+      throw new Error("Invalid file path");
+    }
+
     try {
       // Check if file exists
       await fs.access(absolutePath);
@@ -691,7 +661,7 @@ export const createFileTool = createTool({
     if (context.createDirectory) {
       await fs.ensureDir(dirname(absolutePath));
     }
-    await fs.writeFile(absolutePath, context.content, context.encoding);
+    await fs.writeFile(absolutePath, context.content, { encoding: context.encoding });
     return {
       metadata: {
         path: absolutePath,
@@ -734,28 +704,34 @@ export const editFileTool = createTool({
     error: z.string().optional(),
   }),
   execute: async (
-    executionContext: ToolExecutionContext<
-      z.infer<typeof EditFileInputSchema>,
-      z.infer<typeof EditFileOutputSchema>
-    >
+    executionContext // Let TypeScript infer the type
   ) => {
     const { context } = executionContext;
     const absolutePath = resolve(context.path);
+
+    // Ensure the file path is valid
+    if (!absolutePath) {
+      throw new Error("Invalid file path");
+    }
+
     try {
-      let content = await fs.readFile(absolutePath, context.encoding);
+      // Read file content as string using the specified encoding
+      let content = await fs.readFile(absolutePath, { encoding: context.encoding });
       let edits = 0;
-      let newContent;
+      let newContent: string; // Declare newContent here
       if (context.isRegex) {
         const regex = new RegExp(context.search, "g");
-        newContent = content.replace(regex, (match) => {
+        newContent = content.replace(regex, (match: string): string => { // Use content (string)
           edits++;
           return context.replace;
         });
       } else {
+        // Use content (string) for split and match
         newContent = content.split(context.search).join(context.replace);
-        edits = (content.match(new RegExp(context.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "g")) || []).length;
+        const searchRegex = new RegExp(context.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "g");
+        edits = (content.match(searchRegex) || []).length;
       }
-      await fs.writeFile(absolutePath, newContent, context.encoding);
+      await fs.writeFile(absolutePath, newContent, { encoding: context.encoding });
       return {
         metadata: {
           path: absolutePath,
@@ -795,13 +771,16 @@ export const deleteFileTool = createTool({
     error: z.string().optional(),
   }),
   execute: async (
-    executionContext: ToolExecutionContext<
-      z.infer<typeof DeleteFileInputSchema>,
-      z.infer<typeof DeleteFileOutputSchema>
-    >
+    executionContext: ToolExecutionContext<typeof DeleteFileInputSchema>
   ) => {
     const { context } = executionContext;
     const absolutePath = resolve(context.path);
+
+    // Ensure the file path is valid
+    if (!absolutePath) {
+      throw new Error("Invalid file path");
+    }
+
     try {
       await fs.remove(absolutePath);
       return { path: absolutePath, success: true };
@@ -815,13 +794,27 @@ export const deleteFileTool = createTool({
   },
 });
 
-// LIST FILES TOOL
+// Define the `walk` function to handle directory traversal
+async function walk(directory: string): Promise<string[]> {
+  const results: string[] = [];
+  const files = await fs.readdir(directory);
+  for (const file of files) {
+    const fullPath = resolve(directory, file);
+    const stat = await fs.stat(fullPath);
+    if (stat.isDirectory()) {
+      results.push(...(await walk(fullPath)));
+    } else {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
 export const listFilesTool = createTool({
   id: "list-files",
-  description: "Lists files and folders in a directory.",
+  description: "Lists files in a directory, optionally recursively.",
   inputSchema: z.object({
-    path: z.string().describe("Directory path (absolute or relative)"),
-    filterExtension: z.string().optional().describe("Filter by file extension (e.g. .ts)"),
+    path: z.string().describe("Path to the directory to list files from"),
     recursive: z.boolean().optional().default(false),
   }),
   outputSchema: z.object({
@@ -835,46 +828,116 @@ export const listFilesTool = createTool({
     error: z.string().optional(),
   }),
   execute: async (
-    executionContext: ToolExecutionContext<
-      z.infer<typeof ListFilesInputSchema>,
-      z.infer<typeof ListFilesOutputSchema>
-    >
+    executionContext: { context: z.infer<typeof ListFilesInputSchema> }
   ) => {
     const { context } = executionContext;
     const absolutePath = resolve(context.path);
-    const results: Array<{ name: string; path: string; isDirectory: boolean; extension: string }> = [];
-    async function walk(dir: string) {
-      const entries = await fs.readdir(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        const entryPath = join(dir, entry.name);
-        if (entry.isDirectory()) {
-          results.push({
-            name: entry.name,
-            path: entryPath,
-            isDirectory: true,
-            extension: "",
-          });
-          if (context.recursive) await walk(entryPath);
-        } else {
-          if (!context.filterExtension || entry.name.endsWith(context.filterExtension)) {
-            results.push({
-              name: entry.name,
-              path: entryPath,
-              isDirectory: false,
-              extension: extname(entry.name),
-            });
+
+    // Ensure the directory path is valid
+    if (!absolutePath) {
+      throw new Error("Invalid directory path");
+    }
+
+    const results: { name: string; path: string; isDirectory: boolean; extension: string }[] = [];
+
+    async function processDirectory(directory: string) {
+      const files = await fs.readdir(directory);
+      for (const file of files) {
+        const fullPath = resolve(directory, file);
+        const stat = await fs.stat(fullPath);
+        if (stat.isDirectory()) {
+          results.push({ name: file, path: fullPath, isDirectory: true, extension: "" });
+          if (context.recursive) {
+            await processDirectory(fullPath);
           }
+        } else {
+          results.push({ name: file, path: fullPath, isDirectory: false, extension: extname(file) });
         }
       }
     }
+
     try {
-      await walk(absolutePath);
+      await processDirectory(absolutePath);
       return { files: results, success: true };
     } catch (error) {
       return {
         files: [],
         success: false,
         error: error instanceof Error ? error.message : "Unknown error listing files",
+      };
+    }
+  },
+});
+
+// Define input and output schemas separately to avoid self-reference
+const MkdirInputSchema = z.object({
+  path: z.string().describe("Path to the directory to create (absolute or relative)"),
+  recursive: z.boolean().optional().default(false).describe("Whether to create parent directories if they don't exist"),
+});
+const MkdirOutputSchema = z.object({
+  path: z.string().describe("Path of the created directory"),
+  success: z.boolean().describe("Whether the operation was successful"),
+  error: z.string().optional().describe("Error message if the operation failed"),
+});
+
+export const mkdirTool = createTool({
+  id: "mkdir",
+  description: "Creates a new directory at the specified path.",
+  inputSchema: MkdirInputSchema,
+  outputSchema: MkdirOutputSchema,
+  execute: async (
+    executionContext: { context: z.infer<typeof MkdirInputSchema> }
+  ) => {
+    const { context } = executionContext;
+    const absolutePath = resolve(context.path);
+
+    try {
+      await fs.ensureDir(absolutePath); // Removed invalid `recursive` option
+      return { path: absolutePath, success: true };
+    } catch (error) {
+      return {
+        path: absolutePath,
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error creating directory",
+      };
+    }
+  },
+});
+
+// Define input and output schemas for copyTool to avoid self-reference
+const CopyToolInputSchema = z.object({
+  source: z.string().describe("Path to the source file or directory (absolute or relative)"),
+  destination: z.string().describe("Path to the destination file or directory (absolute or relative)"),
+  overwrite: z.boolean().optional().default(false).describe("Whether to overwrite the destination if it exists"),
+});
+const CopyToolOutputSchema = z.object({
+  source: z.string().describe("Path of the source file or directory"),
+  destination: z.string().describe("Path of the destination file or directory"),
+  success: z.boolean().describe("Whether the operation was successful"),
+  error: z.string().optional().describe("Error message if the operation failed"),
+});
+
+export const copyTool = createTool({
+  id: "copy",
+  description: "Copies a file or directory to a new location.",
+  inputSchema: CopyToolInputSchema,
+  outputSchema: CopyToolOutputSchema,
+  execute: async (
+    executionContext
+  ) => {
+    const { context } = executionContext;
+    const sourcePath = resolve(context.source);
+    const destinationPath = resolve(context.destination);
+
+    try {
+      await fs.copy(sourcePath, destinationPath, { overwrite: context.overwrite });
+      return { source: sourcePath, destination: destinationPath, success: true };
+    } catch (error) {
+      return {
+        source: sourcePath,
+        destination: destinationPath,
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error copying file or directory",
       };
     }
   },

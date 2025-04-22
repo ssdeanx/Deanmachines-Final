@@ -1,4 +1,28 @@
 import { z } from "zod";
+import * as fs from "fs-extra";
+import { FileWriteMode } from "./readwrite";
+
+// ===== File Encoding Enum =====
+export enum FileEncoding {
+  /** UTF-8 text encoding */
+  UTF8 = "utf8",
+  /** ASCII text encoding */
+  ASCII = "ascii",
+  /** UTF-16 Little Endian encoding */
+  UTF16LE = "utf16le",
+  /** Latin1 encoding */
+  LATIN1 = "latin1",
+  /** Base64 encoding */
+  BASE64 = "base64",
+  /** Hex encoding */
+  HEX = "hex",
+  /** UTF-32 encoding */
+  UTF32 = "utf32",
+  /** UTF-16 encoding */
+  UTF16 = "utf16",
+  /** UTF-8 with BOM encoding */
+  UTF8_BOM = "utf8bom",
+}
 
 // ===== Read File =====
 export const ReadFileInputSchema = z.object({
@@ -25,8 +49,10 @@ export const ReadFileOutputSchema = z.object({
 export const WriteFileInputSchema = z.object({
   path: z.string().describe("Path to write the file to"),
   content: z.string().describe("Content to write to the file"),
-  encoding: z.string().optional().default("utf8").describe("Encoding to use when writing the file"),
+  encoding: z.enum([FileEncoding.UTF8, FileEncoding.ASCII, FileEncoding.UTF16LE, FileEncoding.LATIN1, FileEncoding.BASE64, FileEncoding.HEX]).default(FileEncoding.UTF8).describe("Encoding to use when writing the file"),
   createDirectory: z.boolean().optional().default(false).describe("Whether to create the directory if it doesn't exist"),
+  maxSizeBytes: z.number().optional().default(10485760).describe("Maximum size of the file in bytes"),
+  mode: z.enum([FileWriteMode.OVERWRITE, FileWriteMode.APPEND, FileWriteMode.CREATE_NEW]).default(FileWriteMode.OVERWRITE).describe("Write mode"),
 });
 export const WriteFileOutputSchema = z.object({
   metadata: z.object({
@@ -109,7 +135,10 @@ export const ReadKnowledgeFileOutputSchema = z.object({
 export const WriteKnowledgeFileInputSchema = z.object({
   path: z.string().describe("Knowledge file path"),
   content: z.string().describe("Content to write"),
-  encoding: z.string().optional().default("utf8"),
+  encoding: z.enum([FileEncoding.UTF8, FileEncoding.ASCII, FileEncoding.UTF16LE, FileEncoding.LATIN1, FileEncoding.BASE64, FileEncoding.HEX]).default(FileEncoding.UTF8).describe("Encoding to use when writing the file"),
+  createDirectory: z.boolean().optional().default(false).describe("Whether to create the directory if it doesn't exist"),
+  maxSizeBytes: z.number().optional().default(10485760).describe("Maximum size of the file in bytes"),
+  mode: z.enum([FileWriteMode.OVERWRITE, FileWriteMode.APPEND, FileWriteMode.CREATE_NEW]).default(FileWriteMode.OVERWRITE).describe("Write mode"),
 });
 export const WriteKnowledgeFileOutputSchema = z.object({
   path: z.string(),
@@ -136,4 +165,17 @@ export const CreateFileOutputSchema = z.object({
   }),
   success: z.boolean(),
   error: z.string().optional(),
+});
+
+// ===== Tool Execution Context =====
+export const ToolExecutionContext = z.object({
+  container: z.object({}).optional().describe("Container for execution context"),
+  context: z.object({
+    path: z.string().describe("Path to the file"),
+    content: z.string().describe("Content of the file"),
+    encoding: z.enum([FileEncoding.UTF8, FileEncoding.ASCII, FileEncoding.UTF16LE, FileEncoding.LATIN1, FileEncoding.BASE64, FileEncoding.HEX]).default(FileEncoding.UTF8).describe("Encoding of the file"),
+    createDirectory: z.boolean().optional().default(false).describe("Whether to create directories"),
+    maxSizeBytes: z.number().optional().default(10485760).describe("Maximum size of the file in bytes"),
+    mode: z.enum([FileWriteMode.OVERWRITE, FileWriteMode.APPEND, FileWriteMode.CREATE_NEW]).default(FileWriteMode.OVERWRITE).describe("Write mode"),
+  }).describe("Execution context for tools"),
 });

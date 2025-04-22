@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.0.16] - 2025-04-22
+
+### Added
+
+- **New Tools**
+  - Added `mkdirTool` for creating directories with support for parent directory creation.
+  - Added `copyTool` for copying files or directories with optional overwrite functionality.
+
+### Fixed
+
+- **Tool Execution Context**
+  - Resolved type annotation issues in `mkdirTool` and `copyTool`.
+  - Fixed circular references and implicit `any` types in tool definitions.
+  - Corrected `fs.ensureDir` usage by removing invalid `recursive` option.
+
+### Notes
+
+- All changes have been linted and type-checked to ensure compatibility and correctness.
+- Tools are now fully integrated and ready for use in workflows.
+
+---
+
 ## [v0.0.15] - 2025-04-20
 
 ### Added
@@ -442,3 +464,4 @@ const { text } = await copywriterAgent.generate(writingResult);
 - Integration with various external tools and services
 - Memory management for persistent agent context
 - Workflow orchestration capabilities
+````

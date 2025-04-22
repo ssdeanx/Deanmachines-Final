@@ -869,6 +869,40 @@ export const listFilesTool = createTool({
   },
 });
 
+// Define input and output schemas outside to avoid self-reference
+const ListFilesWithWalkInputSchema = z.object({
+  path: z.string().describe("Path to the directory to list files from"),
+});
+const ListFilesWithWalkOutputSchema = z.object({
+  files: z.array(z.string()).describe("List of file paths"),
+  success: z.boolean().describe("Whether the operation was successful"),
+  error: z.string().optional().describe("Error message if the operation failed"),
+});
+
+export const listFilesWithWalkTool = createTool({
+  id: "list-files-with-walk",
+  description: "Lists all files in a directory recursively using the walk function.",
+  inputSchema: ListFilesWithWalkInputSchema,
+  outputSchema: ListFilesWithWalkOutputSchema,
+  execute: async (
+    executionContext: ToolExecutionContext<typeof ListFilesWithWalkInputSchema>
+  ) => {
+    const { context } = executionContext;
+    const absolutePath = resolve(context.path);
+
+    try {
+      const files = await walk(absolutePath);
+      return { files, success: true };
+    } catch (error) {
+      return {
+        files: [],
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error listing files",
+      };
+    }
+  },
+});
+
 // Define input and output schemas separately to avoid self-reference
 const MkdirInputSchema = z.object({
   path: z.string().describe("Path to the directory to create (absolute or relative)"),
@@ -938,6 +972,43 @@ export const copyTool = createTool({
         destination: destinationPath,
         success: false,
         error: error instanceof Error ? error.message : "Unknown error copying file or directory",
+      };
+    }
+  },
+});
+
+const MoveToolInputSchema = z.object({
+  source: z.string().describe("Path to the source file or directory (absolute or relative)"),
+  destination: z.string().describe("Path to the destination file or directory (absolute or relative)"),
+  overwrite: z.boolean().optional().default(false).describe("Whether to overwrite the destination if it exists"),
+});
+
+export const moveTool = createTool({
+  id: "move",
+  description: "Moves a file or directory to a new location.",
+  inputSchema: MoveToolInputSchema,
+  outputSchema: z.object({
+    source: z.string().describe("Path of the source file or directory"),
+    destination: z.string().describe("Path of the destination file or directory"),
+    success: z.boolean().describe("Whether the operation was successful"),
+    error: z.string().optional().describe("Error message if the operation failed"),
+  }),
+  execute: async (
+    executionContext: ToolExecutionContext<typeof MoveToolInputSchema>
+  ) => {
+    const { context } = executionContext;
+    const sourcePath = resolve(context.source);
+    const destinationPath = resolve(context.destination);
+
+    try {
+      await fs.move(sourcePath, destinationPath, { overwrite: context.overwrite });
+      return { source: sourcePath, destination: destinationPath, success: true };
+    } catch (error) {
+      return {
+        source: sourcePath,
+        destination: destinationPath,
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error moving file or directory",
       };
     }
   },

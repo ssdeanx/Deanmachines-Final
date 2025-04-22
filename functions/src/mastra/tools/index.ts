@@ -36,7 +36,10 @@ import { readFileTool,
   createFileTool, 
   editFileTool, 
   deleteFileTool, 
-  listFilesTool } from "./readwrite";
+  listFilesTool,
+  listFilesWithWalkTool,
+  mkdirTool,
+  copyTool, moveTool } from "./readwrite";
 import {
   collectFeedbackTool,
   analyzeFeedbackTool,
@@ -307,6 +310,10 @@ const coreTools: Tool<any, any>[] = [
   editFileTool, 
   deleteFileTool, 
   listFilesTool,
+  listFilesWithWalkTool,
+  mkdirTool,
+  copyTool,
+  moveTool,
   //pdfReaderTool, 
   docxReaderTool, 
   csvReaderTool,

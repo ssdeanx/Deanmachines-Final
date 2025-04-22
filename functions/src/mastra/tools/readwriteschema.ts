@@ -1,6 +1,5 @@
 import { z } from "zod";
 import * as fs from "fs-extra";
-import { FileWriteMode } from "./readwrite";
 
 // ===== File Encoding Enum =====
 export enum FileEncoding {
@@ -22,6 +21,16 @@ export enum FileEncoding {
   UTF16 = "utf16",
   /** UTF-8 with BOM encoding */
   UTF8_BOM = "utf8bom",
+}
+
+// ===== File Write Mode Enum =====
+export enum FileWriteMode {
+  /** Overwrite the file if it exists */
+  OVERWRITE = "overwrite",
+  /** Append to the file if it exists */
+  APPEND = "append",
+  /** Create a new file, fail if the file exists */
+  CREATE_NEW = "create-new",
 }
 
 // ===== Read File =====

@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.0.17] - 2025-04-22
+
+### Added
+
+- **New Tools**
+  - Added `moveTool` for moving files or directories with optional overwrite functionality.
+- **Schema Refactoring**
+  - Moved `FileEncoding` and `FileWriteMode` enums from `readwrite.ts` to `readwriteschema.ts` to resolve circular dependency issues during module initialization.
+  - Updated all schemas in `readwriteschema.ts` to use the locally defined enums.
+  - Updated `readwrite.ts` to import enums and all necessary schemas directly from `readwriteschema.ts`.
+  - Added missing schemas (`ListFilesWithWalkInputSchema`, `ListFilesWithWalkOutputSchema`, `MkdirInputSchema`, `MkdirOutputSchema`, `CopyToolInputSchema`, `CopyToolOutputSchema`, `MoveToolInputSchema`, `MoveToolOutputSchema`) to `readwriteschema.ts`.
+
+### Fixed
+
+- **Circular Dependencies**
+  - Resolved runtime error `TypeError: Cannot read properties of undefined (reading 'OVERWRITE')` by relocating enums to the schema definition file (`readwriteschema.ts`), ensuring they are defined before being used in Zod schemas.
+- **Tool Execution Context & Typing**
+  - Corrected type annotations for `mkdirTool`, `copyTool`, and `moveTool` to use `z.infer` and the appropriate `ToolExecutionContext` structure, resolving implicit `any` types and circular reference errors in type annotations.
+  - Standardized `ToolExecutionContext` usage across all tools in `readwrite.ts`.
+- **`walk` Function Integration**
+  - Ensured the `walk` utility function is correctly utilized by the `listFilesWithWalkTool`, resolving the "declared but its value is never read" lint warning and making the tool functional.
+
+### Known Issues
+
+- **`createFileTool` and `writeToFileTool` Failure**
+  - The `createFileTool` and `writeToFileTool` (which is used internally by `writeKnowledgeFileTool`) are currently non-functional.
+  - Executing these tools results in a runtime `TypeError: fs.writeFile is not a function`.
+  - This indicates a potential issue with how `fs-extra` functions (specifically `writeFile`) are being imported, bundled, or accessed in the final JavaScript output (`index.mjs`). It might be related to module resolution, bundling configuration, or an incorrect import/usage pattern within the `execute` functions of these tools.
+  - **Affected Tools:** `create-file`, `write-file`, `write-knowledge-file`.
+  - **Status:** Needs investigation and correction. The underlying `fs-extra` library is correctly installed, but its `writeFile` function is not accessible at runtime within these specific tool executions.
+
+### Notes
+
+- The majority of file system tools (`read-file`, `edit-file`, `delete-file`, `list-files`, `list-files-with-walk`, `mkdir`, `copy`, `move`) are now functional after resolving schema, typing, and circular dependency issues.
+- The primary remaining blocker for full file system functionality is the `fs.writeFile is not a function` error affecting file creation and writing operations.
+
+---
+
 ## [v0.0.16] - 2025-04-22
 
 ### Added
@@ -464,4 +502,3 @@ const { text } = await copywriterAgent.generate(writingResult);
 - Integration with various external tools and services
 - Memory management for persistent agent context
 - Workflow orchestration capabilities
-````

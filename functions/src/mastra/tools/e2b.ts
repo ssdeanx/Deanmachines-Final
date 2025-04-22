@@ -100,11 +100,16 @@ Execute code in a secure E2B sandbox. Supports Python and TypeScript.
         }
       }
 
+      // TypeScript error: Property 'stdout' does not exist on type 'Execution'
+      // Solution: Use type assertion or check the actual structure returned by sandbox.runCode.
+      // If you are sure 'stdout' exists at runtime, use type assertion:
       return {
         results: exec.results ? exec.results.map((r: any) => r.toJSON?.() ?? r) : [],
-        stdout: exec.stdout ?? "",
-        stderr: exec.stderr ?? "",
-        exitCode: exec.exitCode ?? 0,
+        stdout: (exec as any).stdout ?? "",
+        stderr: (typeof (exec as any).error === "object" && (exec as any).error?.value)
+          ? (exec as any).error.value
+          : (typeof (exec as any).error === "string" ? (exec as any).error : ""),
+        exitCode: exec.error ? -1 : 0,
         outputFiles: retrievedFiles,
       };
     } catch (err: any) {

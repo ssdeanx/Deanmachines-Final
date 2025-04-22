@@ -151,11 +151,8 @@ export const puppeteerTool = createTool<typeof PuppeteerInputSchema, typeof Pupp
     "Navigates to a web page using Puppeteer, performs a sequence of actions (click, type, scrape, wait), optionally takes a screenshot, and returns page information and scraped data.",
   inputSchema: PuppeteerInputSchema,
   outputSchema: PuppeteerOutputSchema,
-  execute: async (
-    executionContext: ToolExecutionContext<
-      z.infer<typeof PuppeteerInputSchema>,
-      z.infer<typeof PuppeteerOutputSchema>
-    >
+    execute: async (
+    executionContext: ToolExecutionContext<typeof PuppeteerInputSchema>
   ) => {
     const { context: input, container } = executionContext;
     const span: Span = createAISpan("puppeteer_tool_execution", {
@@ -490,6 +487,7 @@ export const puppeteerTool = createTool<typeof PuppeteerInputSchema, typeof Pupp
               mode: input.saveMode,
               encoding: input.saveEncoding,
               createDirectory: true,
+              maxSizeBytes: 10485760, // 10 MB default, adjust as needed
             },
             container: container,
           });

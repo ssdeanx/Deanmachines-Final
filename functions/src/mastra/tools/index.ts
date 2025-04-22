@@ -119,6 +119,7 @@ export * from "./polygon";
 export * from "./reddit";
 export * from "./mcptool";
 export * from "./puppeteerTool";
+export * from "./hyper-functionCalls";
 
 // === Configure Logger ===
 const logger = createLogger({ name: "tool-initialization", level: "info" });

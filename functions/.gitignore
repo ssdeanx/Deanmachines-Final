@@ -17,12 +17,3 @@ gcp-vertexai-credentials.json
 .env.development
 .mastra
 .vscode
-.mastra/*
-.mastra/**/*
-*.mastra
-*.mastra/**/*
-.mastra/output
-*.mastra/output/*
-*.mastra/output/**/*
-.mastra/outputs/playground
-*.mastra/outputs/playground/*

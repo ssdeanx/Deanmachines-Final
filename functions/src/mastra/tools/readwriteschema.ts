@@ -1,5 +1,7 @@
 import { z } from "zod";
-import * as fs from "fs-extra";
+
+// All file-writing tools are restricted to the .mastra directory for security.
+// This is enforced in readwrite.ts. Do not change schemas to allow paths outside .mastra.
 
 // ===== File Encoding Enum =====
 export enum FileEncoding {

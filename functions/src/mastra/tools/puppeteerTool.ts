@@ -17,6 +17,7 @@ import {
     scrapeJsonLd,
     scrapeMetaTags,
   } from "./puppeteerScrape";
+import { error } from "console";
 
 const logger = createLogger({ name: "puppeteer", level: "debug" });
 
@@ -151,143 +152,148 @@ export const puppeteerTool = createTool<typeof PuppeteerInputSchema, typeof Pupp
     "Navigates to a web page using Puppeteer, performs a sequence of actions (click, type, scrape, wait), optionally takes a screenshot, and returns page information and scraped data.",
   inputSchema: PuppeteerInputSchema,
   outputSchema: PuppeteerOutputSchema,
-    execute: async (
+  execute: async (
     executionContext: ToolExecutionContext<typeof PuppeteerInputSchema>
-  ) => {
+  ): Promise<z.infer<typeof PuppeteerOutputSchema>> => {
     const { context: input, container } = executionContext;
-    const span: Span = createAISpan("puppeteer_tool_execution", {
-      "tool.id": "puppeteer_web_automator",
-      "input.url": input.url,
-      "input.actions_count": input.actions?.length ?? 0,
-      "input.screenshot_requested": input.screenshot ?? false,
-      "input.save_requested": !!input.saveKnowledgeFilename,
-    });
-
+    // Environment check: block in browser/edge
+    if (typeof window !== "undefined" || typeof process === "undefined" || !process.versions?.node) {
+      return {
+        url: input.url,
+        success: false,
+        error: "Puppeteer tool cannot run in a browser or edge environment. Please use this tool only in a Node.js server environment.",
+      };
+    }
+    const TOOL_TIMEOUT_MS = 60000; // 60 seconds
+    let timeoutHandle: NodeJS.Timeout | undefined;
     let browser: Browser | null = null;
     const output: z.infer<typeof PuppeteerOutputSchema> = {
       url: input.url,
       success: false,
       scrapedData: [],
     };
-
-    const startTime = Date.now();
-
-    try {
-      logger.info(`Starting Puppeteer automation for URL: ${input.url}`);
-      span.addEvent("Automation started", { url: input.url });
-
-      if (input.screenshot) {
-        await fs.ensureDir(SCREENSHOT_DIR);
-        logger.debug(`Ensured screenshot directory exists: ${SCREENSHOT_DIR}`);
-      }
-
-      browser = await puppeteer.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutHandle = setTimeout(() => reject(new Error('Puppeteer tool timed out')), TOOL_TIMEOUT_MS);
+    });
+    const mainLogic = async () => {
+      const span: Span = createAISpan("puppeteer_tool_execution", {
+        "tool.id": "puppeteer_web_automator",
+        "input.url": input.url,
+        "input.actions_count": input.actions?.length ?? 0,
+        "input.screenshot_requested": input.screenshot ?? false,
+        "input.save_requested": !!input.saveKnowledgeFilename,
       });
-      logger.debug("Puppeteer browser launched.");
-      const page: Page = await browser.newPage();
-      logger.debug("New page created.");
-
-      await page.setViewport({ width: 1280, height: 800 });
-      logger.debug("Viewport set.");
-
-      logger.info(`Navigating to ${input.url}...`);
-      await page.goto(input.url, { waitUntil: "networkidle2", timeout: 60000 });
-      output.url = page.url();
-      span.setAttribute("navigation.final_url", output.url);
-      logger.info(`Navigation complete. Current URL: ${output.url}`);
-
-      if (input.initialWaitForSelector) {
-        logger.info(`Waiting for initial selector: ${input.initialWaitForSelector}`);
-        await page.waitForSelector(input.initialWaitForSelector, { timeout: 30000 });
-        logger.debug(`Initial selector found: ${input.initialWaitForSelector}`);
-      }
-
-      // --- Execute Actions ---
-      if (input.actions && input.actions.length > 0) {
-        logger.info(`Executing ${input.actions.length} actions...`);
-        span.addEvent("Executing actions", { count: input.actions.length });
-        for (const [index, action] of input.actions.entries()) {
-          logger.debug(`Executing action ${index + 1}: ${action.type}`);
-          try {
-            switch (action.type) {
-              case "click":
-                logger.info(`Clicking element: ${action.selector}`);
-                const clickPromise = page.click(action.selector);
-                if (action.waitForNavigation) {
-                  logger.debug("Waiting for navigation after click...");
-                  await Promise.all([
-                    clickPromise,
-                    page.waitForNavigation({ waitUntil: "networkidle2", timeout: 60000 }),
-                  ]);
-                  output.url = page.url();
-                  logger.info(`Navigation after click complete. New URL: ${output.url}`);
-                } else {
-                  await clickPromise;
-                }
-                logger.debug(`Clicked element: ${action.selector}`);
-                break;
-
-              case "type":
-                logger.info(`Typing into element: ${action.selector}`);
-                await page.type(action.selector, action.text, { delay: action.delay });
-                logger.debug(`Typed text into: ${action.selector}`);
-                break;
-
-              case "scrape":
-                logger.info(
-                  `Scraping element(s): ${action.selector}` +
-                    (action.attribute ? ` [Attribute: ${action.attribute}]` : " [Text Content]")
-                );
-                try {
-                  const scraped = await scrapeElements(
-                    page,
-                    action.selector,
-                    action.attribute,
-                    action.multiple
-                  );
-                  if (scraped === null) {
-                    logger.warn(`No elements found for selector: ${action.selector}`);
+      const startTime = Date.now();
+      try {
+        logger.info(`Starting Puppeteer automation for URL: ${input.url}`);
+        span.addEvent("Automation started", { url: input.url });
+        if (input.screenshot) {
+          await fs.ensureDir(SCREENSHOT_DIR);
+          logger.debug(`Ensured screenshot directory exists: ${SCREENSHOT_DIR}`);
+        }
+        browser = await puppeteer.launch({
+          headless: true,
+          args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
+        logger.debug("Puppeteer browser launched.");
+        const page: Page = await browser.newPage();
+        logger.debug("New page created.");
+        await page.setViewport({ width: 1280, height: 800 });
+        logger.debug("Viewport set.");
+        logger.info(`Navigating to ${input.url}...`);
+        await page.goto(input.url, { waitUntil: "networkidle2", timeout: 60000 });
+        output.url = page.url();
+        span.setAttribute("navigation.final_url", output.url);
+        logger.info(`Navigation complete. Current URL: ${output.url}`);
+        if (input.initialWaitForSelector) {
+          logger.info(`Waiting for initial selector: ${input.initialWaitForSelector}`);
+          await page.waitForSelector(input.initialWaitForSelector, { timeout: 30000 });
+          logger.debug(`Initial selector found: ${input.initialWaitForSelector}`);
+        }
+        // --- Execute Actions ---
+        if (input.actions && input.actions.length > 0) {
+          logger.info(`Executing ${input.actions.length} actions...`);
+          span.addEvent("Executing actions", { count: input.actions.length });
+          for (const [index, action] of input.actions.entries()) {
+            logger.debug(`Executing action ${index + 1}: ${action.type}`);
+            try {
+              switch (action.type) {
+                case "click":
+                  logger.info(`Clicking element: ${action.selector}`);
+                  const clickPromise = page.click(action.selector);
+                  if (action.waitForNavigation) {
+                    logger.debug("Waiting for navigation after click...");
+                    await Promise.all([
+                      clickPromise,
+                      page.waitForNavigation({ waitUntil: "networkidle2", timeout: 60000 }),
+                    ]);
+                    output.url = page.url();
+                    logger.info(`Navigation after click complete. New URL: ${output.url}`);
+                  } else {
+                    await clickPromise;
                   }
-                  const scrapedArray =
-                    scraped == null
-                      ? []
-                      : Array.isArray(scraped)
-                      ? scraped
-                      : [scraped];
-                  output.scrapedData = [...(output.scrapedData ?? []), ...scrapedArray];
-                  logger.debug(
-                    `Scraped ${scrapedArray.length} items. Total scraped: ${output.scrapedData?.length}`
+                  logger.debug(`Clicked element: ${action.selector}`);
+                  break;
+
+                case "type":
+                  logger.info(`Typing into element: ${action.selector}`);
+                  await page.type(action.selector, action.text, { delay: action.delay });
+                  logger.debug(`Typed text into: ${action.selector}`);
+                  break;
+
+                case "scrape":
+                  logger.info(
+                    `Scraping element(s): ${action.selector}` +
+                      (action.attribute ? ` [Attribute: ${action.attribute}]` : " [Text Content]")
                   );
-                } catch (err) {
-                  logger.error(
-                    `Scrape failed for selector ${action.selector}: ${
-                      err instanceof Error ? err.message : String(err)
-                    }`
-                  );
-                }
-                break;
-            
-                case "scrapeTable":
-                    logger.info(`Scraping table for selector: ${action.selector}`);
-                    try {
-                      const tableRows = await scrapeTable(page, action.selector);
-                      if (!tableRows) {
-                        logger.warn(`No table found for selector: ${action.selector}`);
-                      }
-                      const tableArray = tableRows ?? [];
-                      output.scrapedData = [...(output.scrapedData ?? []), ...tableArray];
-                      logger.debug(`Scraped ${tableArray.length} table rows. Total scraped: ${output.scrapedData?.length}`);
-                    } catch (err) {
-                      logger.error(
-                        `Table scrape failed for selector ${action.selector}: ${
-                          err instanceof Error ? err.message : String(err)
-                        }`
-                      );
+                  try {
+                    const scraped = await scrapeElements(
+                      page,
+                      action.selector,
+                      action.attribute,
+                      action.multiple
+                    );
+                    if (scraped === null) {
+                      logger.warn(`No elements found for selector: ${action.selector}`);
                     }
-                    break;
-                  
+                    const scrapedArray =
+                      scraped == null
+                        ? []
+                        : Array.isArray(scraped)
+                        ? scraped
+                        : [scraped];
+                    output.scrapedData = [...(output.scrapedData ?? []), ...scrapedArray];
+                    logger.debug(
+                      `Scraped ${scrapedArray.length} items. Total scraped: ${output.scrapedData?.length}`
+                    );
+                  } catch (err) {
+                    logger.error(
+                      `Scrape failed for selector ${action.selector}: ${
+                        err instanceof Error ? err.message : String(err)
+                      }`
+                    );
+                  }
+                  break;
+              
+                  case "scrapeTable":
+                      logger.info(`Scraping table for selector: ${action.selector}`);
+                      try {
+                        const tableRows = await scrapeTable(page, action.selector);
+                        if (!tableRows) {
+                          logger.warn(`No table found for selector: ${action.selector}`);
+                        }
+                        const tableArray = tableRows ?? [];
+                        output.scrapedData = [...(output.scrapedData ?? []), ...tableArray];
+                        logger.debug(`Scraped ${tableArray.length} table rows. Total scraped: ${output.scrapedData?.length}`);
+                      } catch (err) {
+                        logger.error(
+                          `Table scrape failed for selector ${action.selector}: ${
+                            err instanceof Error ? err.message : String(err)
+                          }`
+                        );
+                      }
+                      break;
+                    
                   case "scrapeAttributes":
                     logger.info(`Scraping attributes "${action.attribute}" for selector: ${action.selector}`);
                     try {
@@ -348,199 +354,209 @@ export const puppeteerTool = createTool<typeof PuppeteerInputSchema, typeof Pupp
                     }
                     break;
 
-              case "waitForSelector":
-                logger.info(`Waiting for selector: ${action.selector} (Timeout: ${action.timeout}ms)`);
-                await page.waitForSelector(action.selector, { timeout: action.timeout });
-                logger.debug(`Selector found: ${action.selector}`);
-                break;
+                case "waitForSelector":
+                  logger.info(`Waiting for selector: ${action.selector} (Timeout: ${action.timeout}ms)`);
+                  await page.waitForSelector(action.selector, { timeout: action.timeout });
+                  logger.debug(`Selector found: ${action.selector}`);
+                  break;
 
-              case "scroll":
-                logger.info(
-                  `Scrolling ${action.direction}` +
-                    (action.selector ? ` within/to ${action.selector}` : " window")
-                );
-                await page.evaluate(async (options) => {
-                  const element = options.selector ? document.querySelector(options.selector) : window;
-                  if (!element) throw new Error(`Scroll target not found: ${options.selector}`);
-
-                  const scrollAmount =
-                    options.amount ??
-                    (options.direction === "down" || options.direction === "up"
-                      ? window.innerHeight
-                      : window.innerWidth);
-                  const target =
-                    options.selector && element !== window
-                      ? element
-                      : document.scrollingElement || document.documentElement;
-
-                  switch (options.direction) {
-                    case "down":
-                      (target as Element).scrollTop += scrollAmount;
-                      break;
-                    case "up":
-                      (target as Element).scrollTop -= scrollAmount;
-                      break;
-                    case "bottom":
-                      if (options.selector && element instanceof Element) {
-                        element.scrollTop = element.scrollHeight;
-                      } else {
-                        (target as Element).scrollTop = (target as Element).scrollHeight;
-                      }
-                      break;
-                    case "top":
-                      if (options.selector && element instanceof Element) {
-                        element.scrollTop = 0;
-                      } else {
-                        (target as Element).scrollTop = 0;
-                      }
-                      break;
-                  }
-                  await new Promise((resolve) => setTimeout(resolve, 100));
-                }, action);
-                logger.debug(`Scrolled ${action.direction}.`);
-                break;
-
-              case "hover":
-                logger.info(`Hovering over element: ${action.selector}`);
-                await page.hover(action.selector);
-                logger.debug(`Hovered over: ${action.selector}`);
-                break;
-
-              case "select":
-                logger.info(`Selecting option [value=${action.value}] in dropdown: ${action.selector}`);
-                await page.select(action.selector, action.value);
-                logger.debug(`Selected option in: ${action.selector}`);
-                break;
-
-              case "wait":
-                logger.info(`Waiting for ${action.duration}ms`);
-                await new Promise((resolve) => setTimeout(resolve, action.duration));
-                logger.debug("Wait complete.");
-                break;
-
-              case "evaluate":
-                logger.info(`Evaluating script...`);
-                const result = await page.evaluate(action.script);
-                if (result !== undefined) {
-                  output.scrapedData = [...(output.scrapedData ?? []), result];
-                  logger.debug(
-                    `Script evaluated. Result added to scrapedData. Total scraped: ${output.scrapedData?.length}`
+                case "scroll":
+                  logger.info(
+                    `Scrolling ${action.direction}` +
+                      (action.selector ? ` within/to ${action.selector}` : " window")
                   );
-                } else {
-                  logger.debug(`Script evaluated. No return value.`);
-                }
-                break;
-            }
-          } catch (actionError) {
-            logger.error(
-              `Error executing action ${action.type}: ${
-                actionError instanceof Error ? actionError.message : String(actionError)
-              }`
-            );
-          }
-        }
-      }
+                  await page.evaluate(async (options) => {
+                    const element = options.selector ? document.querySelector(options.selector) : window;
+                    if (!element) throw new Error(`Scroll target not found: ${options.selector}`);
 
-      // Save screenshot if requested
-      if (input.screenshot) {
-        const screenshotFilename = generateScreenshotFilename(output.url);
-        const screenshotPath = path.join(SCREENSHOT_DIR, screenshotFilename);
-        await page.screenshot({ path: screenshotPath, fullPage: true });
-        output.screenshotPath = screenshotPath;
-        logger.info(`Screenshot saved: ${screenshotPath}`);
-      }
+                    const scrollAmount =
+                      options.amount ??
+                      (options.direction === "down" || options.direction === "up"
+                        ? window.innerHeight
+                        : window.innerWidth);
+                    const target =
+                      options.selector && element !== window
+                        ? element
+                        : document.scrollingElement || document.documentElement;
 
-      // Save scraped data to knowledge base if requested
-      if (input.saveKnowledgeFilename && output.scrapedData && output.scrapedData.length > 0) {
-        try {
-          let contentToSave: string;
-          if (input.saveFormat === "json") {
-            contentToSave = JSON.stringify(output.scrapedData, null, 2);
-          } else if (input.saveFormat === "csv") {
-            if (
-              Array.isArray(output.scrapedData) &&
-              output.scrapedData.length > 0 &&
-              typeof output.scrapedData[0] === "object"
-            ) {
-              const headers = Object.keys(output.scrapedData[0] as object).join(",");
-              const rows = output.scrapedData.map((item) =>
-                Object.values(item as object)
-                  .map((val) => JSON.stringify(val))
-                  .join(",")
+                    switch (options.direction) {
+                      case "down":
+                        (target as Element).scrollTop += scrollAmount;
+                        break;
+                      case "up":
+                        (target as Element).scrollTop -= scrollAmount;
+                        break;
+                      case "bottom":
+                        if (options.selector && element instanceof Element) {
+                          element.scrollTop = element.scrollHeight;
+                        } else {
+                          (target as Element).scrollTop = (target as Element).scrollHeight;
+                        }
+                        break;
+                      case "top":
+                        if (options.selector && element instanceof Element) {
+                          element.scrollTop = 0;
+                        } else {
+                          (target as Element).scrollTop = 0;
+                        }
+                        break;
+                    }
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                  }, action);
+                  logger.debug(`Scrolled ${action.direction}.`);
+                  break;
+
+                case "hover":
+                  logger.info(`Hovering over element: ${action.selector}`);
+                  await page.hover(action.selector);
+                  logger.debug(`Hovered over: ${action.selector}`);
+                  break;
+
+                case "select":
+                  logger.info(`Selecting option [value=${action.value}] in dropdown: ${action.selector}`);
+                  await page.select(action.selector, action.value);
+                  logger.debug(`Selected option in: ${action.selector}`);
+                  break;
+
+                case "wait":
+                  logger.info(`Waiting for ${action.duration}ms`);
+                  await new Promise((resolve) => setTimeout(resolve, action.duration));
+                  logger.debug("Wait complete.");
+                  break;
+
+                case "evaluate":
+                  logger.info(`Evaluating script...`);
+                  const result = await page.evaluate(action.script);
+                  if (result !== undefined) {
+                    output.scrapedData = [...(output.scrapedData ?? []), result];
+                    logger.debug(
+                      `Script evaluated. Result added to scrapedData. Total scraped: ${output.scrapedData?.length}`
+                    );
+                  } else {
+                    logger.debug(`Script evaluated. No return value.`);
+                  }
+                  break;
+              }
+            } catch (actionError) {
+              logger.error(
+                `Error executing action ${action.type}: ${
+                  actionError instanceof Error ? actionError.message : String(actionError)
+                }`
               );
-              contentToSave = `${headers}\n${rows.join("\n")}`;
-            } else {
-              throw new Error("CSV format requires scraped data to be an array of objects.");
             }
-          } else {
-            throw new Error(`Unsupported save format: ${input.saveFormat}`);
           }
-
-          if (!writeKnowledgeFileTool?.execute) {
-            throw new Error("writeKnowledgeFileTool.execute is not defined or tool not imported correctly.");
-          }
-
-          const writeResult = await writeKnowledgeFileTool.execute({
-            context: {
-              path: input.saveKnowledgeFilename,
-              content: contentToSave,
-              mode: input.saveMode,
-              encoding: input.saveEncoding,
-              createDirectory: true,
-              maxSizeBytes: 10485760, // 10 MB default, adjust as needed
-            },
-            container: container,
-          });
-
-          if (writeResult.success) {
-            span.setAttribute("output.save_path", writeResult.metadata.path);
-            span.addEvent("Save successful");
-            output.knowledgeSavePath = writeResult.metadata.path;
-            output.saveSuccess = true;
-            logger.info(`Successfully saved scraped data to knowledge base: ${output.knowledgeSavePath}`);
-          } else {
-            span.addEvent("Save failed", { error: output.saveError });
-            output.saveSuccess = false;
-            output.saveError = writeResult.error || "Unknown error saving to knowledge base.";
-            logger.error(`Failed to save scraped data to knowledge base: ${output.saveError}`);
-          }
-        } catch (saveError: any) {
-          output.saveSuccess = false;
-          output.saveError = saveError instanceof Error ? saveError.message : String(saveError);
-          logger.error(`Error preparing or saving scraped data to knowledge base: ${output.saveError}`);
         }
-      } else if (input.saveKnowledgeFilename) {
-        logger.warn(
-          `Knowledge base filename provided (${input.saveKnowledgeFilename}), but no scraped data to save.`
-        );
+        // Save screenshot if requested
+        if (input.screenshot) {
+          const screenshotFilename = generateScreenshotFilename(output.url);
+          const screenshotPath = path.join(SCREENSHOT_DIR, screenshotFilename);
+          await page.screenshot({ path: screenshotPath, fullPage: true });
+          output.screenshotPath = screenshotPath;
+          logger.info(`Screenshot saved: ${screenshotPath}`);
+        }
+        // Save scraped data to knowledge base if requested
+        if (input.saveKnowledgeFilename && output.scrapedData && output.scrapedData.length > 0) {
+          try {
+            let contentToSave: string;
+            if (input.saveFormat === "json") {
+              contentToSave = JSON.stringify(output.scrapedData, null, 2);
+            } else if (input.saveFormat === "csv") {
+              if (
+                Array.isArray(output.scrapedData) &&
+                output.scrapedData.length > 0 &&
+                typeof output.scrapedData[0] === "object"
+              ) {
+                const headers = Object.keys(output.scrapedData[0] as object).join(",");
+                const rows = output.scrapedData.map((item) =>
+                  Object.values(item as object)
+                    .map((val) => JSON.stringify(val))
+                    .join(",")
+                );
+                contentToSave = `${headers}\n${rows.join("\n")}`;
+              } else {
+                throw new Error("CSV format requires scraped data to be an array of objects.");
+              }
+            } else {
+              throw new Error(`Unsupported save format: ${input.saveFormat}`);
+            }
+            if (!writeKnowledgeFileTool?.execute) {
+              throw new Error("writeKnowledgeFileTool.execute is not defined or tool not imported correctly.");
+            }
+            const writeResult = await writeKnowledgeFileTool.execute({
+              context: {
+                path: input.saveKnowledgeFilename,
+                content: contentToSave,
+                mode: input.saveMode,
+                encoding: input.saveEncoding,
+                createDirectory: true,
+                maxSizeBytes: 10485760, // 10 MB default, adjust as needed
+              },
+              container: container,
+            });
+            if (writeResult.success) {
+              span.setAttribute("output.save_path", writeResult.metadata.path);
+              span.addEvent("Save successful");
+              output.knowledgeSavePath = writeResult.metadata.path;
+              output.saveSuccess = true;
+              logger.info(`Successfully saved scraped data to knowledge base: ${output.knowledgeSavePath}`);
+            } else {
+              span.addEvent("Save failed", { error: output.saveError });
+              output.saveSuccess = false;
+              output.saveError = writeResult.error || "Unknown error saving to knowledge base.";
+              logger.error(`Failed to save scraped data to knowledge base: ${output.saveError}`);
+            }
+          } catch (saveError: any) {
+            output.saveSuccess = false;
+            output.saveError = saveError instanceof Error ? saveError.message : String(saveError);
+            logger.error(`Error preparing or saving scraped data to knowledge base: ${output.saveError}`);
+          }
+        } else if (input.saveKnowledgeFilename) {
+          logger.warn(
+            `Knowledge base filename provided (${input.saveKnowledgeFilename}), but no scraped data to save.`
+          );
+        }
+        output.success = true;
+        logger.info("Puppeteer automation completed successfully.");
+        span.setAttribute("output.scraped_count", output.scrapedData?.length ?? 0);
+        recordMetrics(span, {
+          status: "success",
+          latencyMs: Date.now() - startTime,
+        });
+      } catch (error: any) {
+        logger.error(`Puppeteer tool error: ${error.message}`, error);
+        output.error = error instanceof Error ? error.message : String(error);
+        output.success = false;
+        recordMetrics(span, {
+          status: "error",
+          errorMessage: output.error,
+          latencyMs: Date.now() - startTime,
+        });
+        span.recordException(error);
+      } finally {
+        if (browser) {
+          await browser.close();
+          logger.info("Browser closed.");
+          span.addEvent("Browser closed");
+        }
+        span.end();
       }
-
-      output.success = true;
-      logger.info("Puppeteer automation completed successfully.");
-      span.setAttribute("output.scraped_count", output.scrapedData?.length ?? 0);
-      recordMetrics(span, {
-        status: "success",
-        latencyMs: Date.now() - startTime,
-      });
-    } catch (error: any) {
-      logger.error(`Puppeteer tool error: ${error.message}`, error);
-      output.error = error instanceof Error ? error.message : String(error);
-      output.success = false;
-      recordMetrics(span, {
-        status: "error",
-        errorMessage: output.error,
-        latencyMs: Date.now() - startTime,
-      });
-      span.recordException(error);
-    } finally {
-      if (browser) {
-        await browser.close();
-        logger.info("Browser closed.");
-        span.addEvent("Browser closed");
-      }
-      span.end();
+      return output;
+    };
+    try {
+      const result = await Promise.race([
+        mainLogic(),
+        timeoutPromise
+      ]);
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+      return result as z.infer<typeof PuppeteerOutputSchema>;
+    } catch (error) {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+      // Browser cleanup is handled in the finally block, so no need to close it here.
+      return {
+        url: input.url,
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
-
-    return output;
   },
 });

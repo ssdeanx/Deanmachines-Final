@@ -2,12 +2,57 @@
 
 ## [Unreleased] - 2025-04-27 15:42 UTC
 
+### Context Snapshot (as of 2025-04-27)
+
+- Mastra AI is in active development, focusing on robust thread-aware tool integration and prompt engineering best practices. Current priority: extend threadId tracing to all tools and ensure seamless agent handoff.
+
+### Agent Log
+
+- 2025-04-27 15:42 UTC: AI agent added advanced onboarding protocol, prompt engineering examples, and meta-instructions.
+- 2025-04-27 16:10 UTC: Human developer clarified threadId escalation protocol and accepted onboarding improvements.
+
+### Open Questions & TODOs
+
+- [ ] Should threadId tracing be extended to all workflow modules?
+- [ ] Review error handling in wikidata-client.ts for edge cases.
+- [ ] Integrate LLM resource lists from mastra.ai into agent workflows.
+
+### Agent Persona
+
+- Be concise but thorough.
+- Prioritize traceability and explainability.
+- When in doubt, document your reasoning.
+- Use examples and step-by-step reasoning for complex changes.
+
+### Quick Start for New Agents
+
+1. Read the Context Snapshot and Agent Log.
+2. Review the First-Time Agent Checklist.
+3. Pick an item from Open Questions & TODOs or continue the last agent's work.
+
+### Glossary
+
+- **threadId:** Unique identifier for a conversation/session.
+- **agent:** Human or AI contributor to the project.
+- **handoff:** The process of transferring context/work to the next agent.
+- **prompt engineering:** The practice of designing, structuring, and iteratively refining prompts for LLMs to achieve optimal results.
+- **LLM Resource List:** Comprehensive lists of large language models and prompt techniques. See [mastra.ai/llms-full.txt](https://mastra.ai/llms-full.txt) and [mastra.ai/llms.txt](https://mastra.ai/llms.txt).
+
+### Resources
+
+- [LLMs Full List – mastra.ai/llms-full.txt](https://mastra.ai/llms-full.txt)
+- [LLMs Short List – mastra.ai/llms.txt](https://mastra.ai/llms.txt)
+- [Prompt Engineering Guide for 2025 – viso.ai](https://viso.ai/deep-learning/prompt-engineering/)
+- [10 Prompt Engineering Techniques Every Beginner Should Know – Google Cloud Community/Medium](https://medium.com/google-cloud/10-prompt-engineering-techniques-every-beginner-should-know-bf6c195916c7)
+
+---
+
 ### Agent Onboarding & Context Protocol
 
 #### Who am I?
 
 - **Human Developer:**
-  - Read the “Robust Instructions” and “Prompt Engineering Reference.”
+  - Read the "Robust Instructions" and "Prompt Engineering Reference."
   - Add code, tests, and reasoning for every change.
   - Leave clear notes for future agents.
 - **AI Agent:**

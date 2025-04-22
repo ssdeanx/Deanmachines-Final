@@ -73,6 +73,11 @@ function resolveKnowledgePath(path: string): string {
   return join(KNOWLEDGE_BASE_PATH, path);
 }
 
+const MASTRA_DIR = resolve(process.cwd(), ".mastra");
+function isInMastraDir(path: string): boolean {
+  return resolve(path).startsWith(MASTRA_DIR);
+}
+
 /**
  * Tool for reading files from the filesystem
  */
@@ -323,6 +328,20 @@ export const writeToFileTool = createTool({
       // Ensure the file path is valid
       if (!absolutePath) {
         throw new Error("Invalid file path");
+      }
+
+      if (!isInMastraDir(absolutePath)) {
+        return {
+          metadata: {
+            path: absolutePath,
+            size: 0,
+            extension: extname(absolutePath),
+            encoding: context.encoding,
+            mode: context.mode,
+          },
+          success: false,
+          error: "Access denied: Can only write to .mastra directory",
+        };
       }
 
       // Ensure maxSizeBytes is set (fallback to default if missing)
@@ -616,6 +635,19 @@ export const createFileTool = createTool({
       throw new Error("Invalid file path");
     }
 
+    if (!isInMastraDir(absolutePath)) {
+      return {
+        metadata: {
+          path: absolutePath,
+          size: 0,
+          extension: extname(absolutePath),
+          encoding: executionContext.context.encoding,
+        },
+        success: false,
+        error: "Access denied: Can only create files inside .mastra directory",
+      };
+    }
+
     try {
       // Check if file exists
       await fs.access(absolutePath);
@@ -687,6 +719,20 @@ export const editFileTool = createTool({
       throw new Error("Invalid file path");
     }
 
+    if (!isInMastraDir(absolutePath)) {
+      return {
+        metadata: {
+          path: absolutePath,
+          size: 0,
+          extension: extname(absolutePath),
+          encoding: executionContext.context.encoding,
+          edits: 0,
+        },
+        success: false,
+        error: "Access denied: Can only edit files inside .mastra directory",
+      };
+    }
+
     try {
       // Read file content as string using the specified encoding
       let content = await fs.readFile(absolutePath, { encoding: executionContext.context.encoding });
@@ -750,17 +796,29 @@ export const deleteFileTool = createTool({
 
     // Ensure the file path is valid
     if (!absolutePath) {
-      throw new Error("Invalid file path");
+      return {
+        path: executionContext.context.path,
+        success: false,
+        error: "Invalid file path",
+      };
+    }
+
+    if (!isInMastraDir(absolutePath)) {
+      return {
+        path: absolutePath,
+        success: false,
+        error: "Access denied: Can only delete files inside .mastra directory",
+      };
     }
 
     try {
       await fs.remove(absolutePath);
       return { path: absolutePath, success: true };
-    } catch (error) {
+    } catch (err) {
       return {
         path: absolutePath,
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error deleting file",
+        error: err instanceof Error ? err.message : "Unknown error deleting file",
       };
     }
   },

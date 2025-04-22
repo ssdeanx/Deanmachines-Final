@@ -1,6 +1,28 @@
 // File: hyperbrowser.ts
 import { connect, Browser } from "puppeteer-core";
-import { Hyperbrowser, SessionDetail } from "@hyperbrowser/sdk";
+import Hyperbrowser from "@hyperbrowser/sdk";
+import { HyperAgent } from "@hyperbrowser/agent";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { z } from "zod";
+
+// Type for session details (customize as needed)
+export type SessionDetail = {
+  id: string;
+  wsEndpoint: string;
+  [key: string]: any;
+};
+
+export type Profile = {
+  id: string;
+  name: string;
+  [key: string]: any;
+};
+
+export type Extension = {
+  id: string;
+  name: string;
+  [key: string]: any;
+};
 
 // Initialize the Hyperbrowser client
 export const hyperbrowserClient = new Hyperbrowser({
@@ -8,18 +30,30 @@ export const hyperbrowserClient = new Hyperbrowser({
 });
 
 /**
- * Creates a new Hyperbrowser session.
+ * Creates a new Hyperbrowser session with advanced options.
+ * @param params - Session creation options (stealth, proxy, profiles, extensions, webRecording, captcha, etc.)
  * @returns {Promise<SessionDetail>} The created session details.
+ *
+ * Example params:
+ * {
+ *   useStealth: true,
+ *   proxy: "http://username:password@proxyhost:port",
+ *   profileId: "profile-123",
+ *   extensions: ["extensionId1", "extensionId2"],
+ *   webRecording: true,
+ *   captcha: { provider: "2captcha", apiKey: "..." },
+ *   staticIp: true,
+ *   ...
+ * }
  */
-export async function createHyperbrowserSession(): Promise<SessionDetail> {
+export async function createHyperbrowserSession(params?: Record<string, any>): Promise<SessionDetail> {
   try {
-    console.info("Creating Hyperbrowser session...");
-    const session = await hyperbrowserClient.sessions.create();
+    const session = await hyperbrowserClient.sessions.create(params);
     console.info(`Hyperbrowser session created with ID: ${session.id}`);
-    return session;
+    return session as SessionDetail;
   } catch (error) {
     console.error("Failed to create Hyperbrowser session:", error);
-    throw error; // Re-throw the error after logging
+    throw error;
   }
 }
 
@@ -53,47 +87,142 @@ export async function stopHyperbrowserSession(sessionId: string): Promise<void> 
     console.info(`Hyperbrowser session stopped: ${sessionId}`);
   } catch (error) {
     console.error(`Failed to stop Hyperbrowser session ${sessionId}:`, error);
-    // Decide if stopping failure should throw or just be logged
-    // For now, log and continue, but consider implications
+    // Log and continue
   }
 }
 
-// Example usage (optional, can be removed or kept for testing)
-// This IIFE demonstrates how to use the exported functions.
-(async () => {
-  let session: SessionDetail | null = null;
-  let browser: Browser | null = null;
-  try {
-    session = await createHyperbrowserSession();
-    browser = await connectToHyperbrowserSession(session);
-
-    // Create a new page
-    const [page] = await browser.pages();
-
-    // Navigate to a website
-    console.info("Navigating to Hacker News...");
-    await page.goto("https://news.ycombinator.com/");
-    const pageTitle = await page.title();
-    console.info(`Page title: ${pageTitle}`);
-
-    await page.close();
-    console.info("Page closed.");
-
-  } catch (error) {
-    console.error("An error occurred during the Hyperbrowser example usage:", error instanceof Error ? error.message : error);
-  } finally {
-    // Ensure resources are cleaned up even if errors occur
-    if (browser) {
-      try {
-        await browser.close();
-        console.info("Browser connection closed.");
-      } catch (closeError) {
-        console.error("Error closing browser:", closeError);
-      }
-    }
-    if (session) {
-      await stopHyperbrowserSession(session.id);
-    }
-    console.info("Hyperbrowser example usage finished.");
+/**
+ * Creates a HyperAgent instance using Google Gemini as the LLM.
+ * @param model - The Gemini model to use (default: "gemini-2.0-flash")
+ * @returns {HyperAgent} The configured HyperAgent instance.
+ */
+export function createGoogleHyperAgent(model: string = "gemini-2.0-flash", outputSchema?: any): HyperAgent {
+  if (!process.env.GOOGLE_AI_API_KEY) {
+    throw new Error("GOOGLE_AI_API_KEY environment variable is not set.");
   }
-})().catch((error) => console.error("Unhandled error in Hyperbrowser example IIFE:", error));
+  return new HyperAgent({
+    llm: new ChatGoogleGenerativeAI({
+      apiKey: process.env.GOOGLE_AI_API_KEY,
+      model,
+    }),
+    browserProvider: "Hyperbrowser",
+    ...(outputSchema ? { outputSchema } : {}),
+  });
+}
+
+/**
+ * Runs a browser automation task using HyperAgent and Google Gemini.
+ * @param task - The browser automation task to perform.
+ * @param model - The Gemini model to use (default: "gemini-2.0-flash")
+ * @returns {Promise<unknown>} The output of the task.
+ */
+export async function runHyperAgentTask(task: string, model: string = "gemini-2.0-flash", outputSchema?: any): Promise<unknown> {
+  const agent = createGoogleHyperAgent(model, outputSchema);
+  try {
+    const result = await agent.executeTask(task);
+    return result.output;
+  } catch (error) {
+    console.error("Error running HyperAgent task:", error);
+    throw error;
+  } finally {
+    await agent.closeAgent();
+  }
+}
+
+/**
+ * Example: Create a session with all advanced options (commented out for reference)
+ *
+ * // const session = await createHyperbrowserSession({
+ * //   useStealth: true,
+ * //   proxy: "http://username:password@proxyhost:port",
+ * //   profileId: "profile-123",
+ * //   extensions: ["extensionId1", "extensionId2"],
+ * //   webRecording: true,
+ * //   captcha: { provider: "2captcha", apiKey: "..." },
+ * //   staticIp: true,
+ * // });
+ */
+
+// --- Profile Management ---
+/**
+ * Create a new browser profile.
+ */
+export async function createProfile(name: string): Promise<Profile> {
+  const profile = await hyperbrowserClient.profiles.create({ name });
+  return profile as Profile;
+}
+
+/**
+ * List all browser profiles.
+ */
+export async function listProfiles(): Promise<Profile[]> {
+  const profiles = await hyperbrowserClient.profiles.list();
+  return profiles as unknown as Profile[];
+}
+
+/**
+ * Delete a browser profile by ID.
+ */
+export async function deleteProfile(profileId: string): Promise<void> {
+  await hyperbrowserClient.profiles.delete(profileId);
+}
+
+// --- Extension Management ---
+/**
+ * Upload a browser extension (path to .zip or .crx).
+ */
+export async function uploadExtension(filePath: string): Promise<Extension> {
+  const extService = hyperbrowserClient.extensions as any;
+  if (typeof extService.upload === "function") {
+    return await extService.upload({ filePath }) as Extension;
+  } else if (typeof extService.create === "function") {
+    return await extService.create({ filePath }) as Extension;
+  } else if (typeof extService.add === "function") {
+    return await extService.add({ filePath }) as Extension;
+  }
+  throw new Error("No supported extension upload method found in SDK.");
+}
+
+/**
+ * List all uploaded extensions.
+ */
+export async function listExtensions(): Promise<Extension[]> {
+  const extensions = await hyperbrowserClient.extensions.list();
+  return extensions as unknown as Extension[];
+}
+
+/**
+ * Delete an extension by ID.
+ */
+export async function deleteExtension(extensionId: string): Promise<void> {
+  const extService = hyperbrowserClient.extensions as any;
+  if (typeof extService.delete === "function") {
+    await extService.delete(extensionId);
+    return;
+  } else if (typeof extService.remove === "function") {
+    await extService.remove(extensionId);
+    return;
+  } else if (typeof extService.del === "function") {
+    await extService.del(extensionId);
+    return;
+  }
+  throw new Error("No supported extension delete method found in SDK.");
+}
+
+// --- Web Recording ---
+/**
+ * Download a web recording for a session.
+ * Returns a Buffer or file path depending on SDK.
+ */
+export async function downloadWebRecording(sessionId: string): Promise<any> {
+  return await hyperbrowserClient.sessions.getRecording(sessionId);
+}
+
+// --- Live View / Debug ---
+/**
+ * Get the WebSocket endpoint for live view/debugging.
+ * You can connect with Chrome DevTools or Puppeteer.
+ */
+export function getLiveViewWsEndpoint(session: SessionDetail): string {
+  return session.wsEndpoint;
+}

@@ -10,17 +10,19 @@
 export * from "./config.types";
 export * from "./model.utils";
 export {
+  setupGoogleProvider,
+  createGoogleClientConfig,
+  setupVertexProvider,
+  createVertexClientConfig,
+  getProviderConfig
+} from "./provider.utils";
+export type {
   GoogleOptions,
   GoogleVertexOptions,
   ProviderSetupOptions,
   GoogleProviderConfig,
   VertexProviderConfig,
-  ProviderConfig,
-  setupGoogleProvider,
-  createGoogleClientConfig,
-  setupVertexProvider,
-  createVertexClientConfig,
-  getProviderConfig,
+  ProviderConfig
 } from "./provider.utils";
 
 // Base configurations removed as part of refactoring

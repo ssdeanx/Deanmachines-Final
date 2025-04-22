@@ -2,6 +2,93 @@
 
 ## [Unreleased] - 2025-04-27 15:42 UTC
 
+### Agent Onboarding & Context Protocol
+
+#### Who am I?
+
+- **Human Developer:**
+  - Read the “Robust Instructions” and “Prompt Engineering Reference.”
+  - Add code, tests, and reasoning for every change.
+  - Leave clear notes for future agents.
+- **AI Agent:**
+  - Follow all instructions, log your reasoning, and always explain your actions for human review.
+  - Update the changelog and agent memory/context after each change.
+
+#### First-Time Agent Checklist
+
+- [ ] Read the Robust Instructions section.
+- [ ] Review recent changes and examples.
+- [ ] Run or simulate tests for any tool you modify.
+- [ ] Add your reasoning, examples, and next steps to the changelog.
+- [ ] Update agent memory/context with what you did and why.
+
+#### Agent Memory/Context
+
+- After each change, update the agent's memory/context (or leave a summary in the changelog) so future agents know what was done and why.
+- If you are an AI agent, use your context window to remember recent changes and decisions.
+
+#### Error Handling & Escalation
+
+- If you are unsure, document your question or uncertainty in the changelog.
+- Escalate to a human reviewer or project maintainer if needed.
+
+#### Communication & Handoff
+
+- When handing off, summarize your context, open questions, and next steps at the end of the changelog.
+- Use clear, structured notes for seamless agent-to-agent or human-to-agent transitions.
+
+#### Quick Reference Table
+
+| Action                | Best Practice                        | Where to Find More Info         |
+|-----------------------|--------------------------------------|---------------------------------|
+| Add new feature       | Use Few-Shot & Chain-of-Thought      | Robust Instructions, Examples   |
+| Debug an issue        | Log reasoning, document steps        | Chain-of-Thought, Error Handling|
+| Handoff to next agent | Summarize context, open questions    | Communication & Handoff         |
+| Update threadId logic | Follow Robust Instructions           | Robust Instructions section     |
+
+#### Prompt Engineering Techniques (with Examples)
+
+- **Zero-Shot:**
+  - *Instruction:* "Add a new tool for summarizing text."
+  - *Example:* No examples provided; agent must infer the task.
+- **Few-Shot:**
+  - *Instruction:* "Given these examples, generate a similar output."
+  - *Example:*
+    - Input: `Summarize: 'The quick brown fox jumps over the lazy dog.'`
+    - Output: `A fox jumps over a dog.`
+- **Chain-of-Thought:**
+  - *Instruction:* "Explain your reasoning step by step."
+  - *Example:*
+    - Step 1: Identify the main subject (fox).
+    - Step 2: Identify the action (jumps over).
+    - Step 3: Identify the object (dog).
+    - Step 4: Summarize concisely.
+- **Tree-of-Thought:**
+  - *Instruction:* "Explore multiple solutions and pick the best."
+  - *Example:*
+    - Solution A: Summarize as a single sentence.
+    - Solution B: Summarize as a bullet list.
+    - Choose the most concise.
+- **Iterative Prompting:**
+  - *Instruction:* "Refine the output based on feedback."
+  - *Example:*
+    - First output: `A fox jumps over a dog.`
+    - Feedback: "Include the color of the fox."
+    - Refined output: `A quick brown fox jumps over a dog.`
+- **Negative Prompting:**
+  - *Instruction:* "Do not mention the color of the dog."
+  - *Example:*
+    - Output: `A quick brown fox jumps over a dog.` (No mention of dog color)
+- **ReAct:**
+  - *Instruction:* "Plan, act, observe, and iterate."
+  - *Example:*
+    - Plan: "I will summarize, then check for missing details."
+    - Act: Summarize.
+    - Observe: "Did I miss anything?"
+    - Iterate: Add missing details if needed.
+
+---
+
 ### How to Use This Changelog (Prompt Engineering & Agent Guidance)
 
 - **Purpose:** This changelog is both a technical log and a prompt design guide. It is structured to help future agents (human or AI) quickly understand, extend, and reason about the codebase and its evolution.
@@ -87,7 +174,7 @@
 
 ---
 
-_Next agent: Use this changelog as both a technical log and a prompt design guide. Add your reasoning, examples, and next steps for maximum clarity and maintainability. If you are an AI agent, always explain your actions and decisions for human review._
+*Next agent: Use this changelog as both a technical log and a prompt design guide. Add your reasoning, examples, and next steps for maximum clarity and maintainability. If you are an AI agent, always explain your actions and decisions for human review.*
 
 ## [0.1.6] - 2025-04-21
 

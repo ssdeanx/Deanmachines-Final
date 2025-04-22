@@ -80,3 +80,8 @@ export const sharedMemory = createMemory();
 
 // Re-export Memory type for convenience
 export type { Memory };
+
+/**
+ * Thread manager for conversation/session management and tracing.
+ */
+export { threadManager } from "../utils/thread-manager";

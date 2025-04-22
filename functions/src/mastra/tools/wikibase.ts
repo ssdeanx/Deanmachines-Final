@@ -210,9 +210,12 @@ export class WikipediaClient extends AIFunctionsProvider {
     description: "Searches Wikipedia for pages matching the given query.",
     inputSchema: z.object({
       query: z.string().describe("Search query"),
+      threadId: z.string().optional().describe("The thread ID for tracing."),
     }),
   })
-  async search({ query, ...opts }: wikipedia.SearchOptions) {
+  async search(input: { query: string; threadId?: string; limit?: number }) {
+    const { query, threadId, ...opts } = input;
+    if (threadId) { console.info({ event: 'tool.execute', tool: 'wikipedia_search', threadId }); }
     return (
       // https://www.mediawiki.org/wiki/API:REST_API
       (this.ky
@@ -236,14 +239,12 @@ export class WikipediaClient extends AIFunctionsProvider {
         .optional()
         .default("en-us")
         .describe("Locale code for the language to use."),
+      threadId: z.string().optional().describe("The thread ID for tracing."),
     }),
   })
-  async getPageSummary({
-    title,
-    acceptLanguage = "en-us",
-    redirect = true,
-    ...opts
-  }: wikipedia.PageSummaryOptions) {
+  async getPageSummary(input: { title: string; acceptLanguage?: string; redirect?: boolean; threadId?: string }) {
+    let { title, acceptLanguage = "en-us", redirect = true, threadId, ...opts } = input;
+    if (threadId) { console.info({ event: 'tool.execute', tool: 'wikipedia_get_page_summary', threadId }); }
     title = title.trim().replace(/ /g, "_");
 
     // https://en.wikipedia.org/api/rest_v1/

@@ -39,6 +39,7 @@ export const ReadFileInputSchema = z.object({
   encoding: z.string().optional().default("utf8").describe("Encoding to use when reading the file"),
   startLine: z.number().optional().describe("Line to start reading from (0-indexed)"),
   endLine: z.number().optional().describe("Line to end reading at (0-indexed, inclusive)"),
+  threadId: z.string().optional().describe("The thread ID for tracing."),
 });
 export const ReadFileOutputSchema = z.object({
   content: z.string().describe("Content of the file"),
@@ -62,6 +63,7 @@ export const WriteFileInputSchema = z.object({
   createDirectory: z.boolean().optional().default(false).describe("Whether to create the directory if it doesn't exist"),
   maxSizeBytes: z.number().optional().default(10485760).describe("Maximum size of the file in bytes"),
   mode: z.enum([FileWriteMode.OVERWRITE, FileWriteMode.APPEND, FileWriteMode.CREATE_NEW]).default(FileWriteMode.OVERWRITE).describe("Write mode"),
+  threadId: z.string().optional().describe("The thread ID for tracing."),
 });
 export const WriteFileOutputSchema = z.object({
   metadata: z.object({
@@ -81,6 +83,7 @@ export const EditFileInputSchema = z.object({
   replace: z.string().describe("Replacement string"),
   encoding: z.string().optional().default("utf8"),
   isRegex: z.boolean().optional().default(false),
+  threadId: z.string().optional().describe("The thread ID for tracing."),
 });
 export const EditFileOutputSchema = z.object({
   metadata: z.object({
@@ -97,6 +100,7 @@ export const EditFileOutputSchema = z.object({
 // ===== Delete File =====
 export const DeleteFileInputSchema = z.object({
   path: z.string().describe("Path of the file to delete"),
+  threadId: z.string().optional().describe("The thread ID for tracing."),
 });
 export const DeleteFileOutputSchema = z.object({
   path: z.string(),
@@ -109,6 +113,7 @@ export const ListFilesInputSchema = z.object({
   path: z.string().describe("Directory path to list"),
   recursive: z.boolean().optional().default(false),
   filterExtension: z.string().optional(),
+  threadId: z.string().optional().describe("The thread ID for tracing."),
 });
 export const ListFilesOutputSchema = z.object({
   files: z.array(
@@ -127,6 +132,7 @@ export const ListFilesOutputSchema = z.object({
 export const ReadKnowledgeFileInputSchema = z.object({
   path: z.string().describe("Knowledge file path"),
   encoding: z.string().optional().default("utf8"),
+  threadId: z.string().optional().describe("The thread ID for tracing."),
 });
 export const ReadKnowledgeFileOutputSchema = z.object({
   content: z.string(),
@@ -148,6 +154,7 @@ export const WriteKnowledgeFileInputSchema = z.object({
   createDirectory: z.boolean().optional().default(false).describe("Whether to create the directory if it doesn't exist"),
   maxSizeBytes: z.number().optional().default(10485760).describe("Maximum size of the file in bytes"),
   mode: z.enum([FileWriteMode.OVERWRITE, FileWriteMode.APPEND, FileWriteMode.CREATE_NEW]).default(FileWriteMode.OVERWRITE).describe("Write mode"),
+  threadId: z.string().optional().describe("The thread ID for tracing."),
 });
 export const WriteKnowledgeFileOutputSchema = z.object({
   path: z.string(),
@@ -164,6 +171,7 @@ export const CreateFileInputSchema = z.object({
   content: z.string().describe("Content for the new file"),
   encoding: z.string().optional().default("utf8"),
   createDirectory: z.boolean().optional().default(false),
+  threadId: z.string().optional().describe("The thread ID for tracing."),
 });
 export const CreateFileOutputSchema = z.object({
   metadata: z.object({

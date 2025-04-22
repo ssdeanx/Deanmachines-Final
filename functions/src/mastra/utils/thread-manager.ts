@@ -9,36 +9,10 @@ import { randomUUID } from "crypto";
 import { createLogger } from "@mastra/core/logger";
 import signoz, { createAISpan } from "../services/signoz";
 import { createLangSmithRun, trackFeedback } from "../services/langsmith";
+import type { ThreadInfo, CreateThreadOptions } from "../types";
+import { ThreadManagerError, CreateThreadOptionsSchema } from "../types";
 
 const logger = createLogger({ name: "thread-manager", level: "info" });
-
-/**
- * Thread information with creation metadata
- */
-interface ThreadInfo {
-  /** Unique thread identifier */
-  id: string;
-  /** User or entity associated with the thread */
-  resourceId: string;
-  /** When the thread was created */
-  createdAt: Date;
-  /** Optional metadata for thread categorization */
-  metadata?: Record<string, unknown>;
-  /** When the thread was last read */
-  lastReadAt?: Date;
-}
-
-/**
- * Thread creation options
- */
-interface CreateThreadOptions {
-  /** Optional predefined thread ID (generates UUID if not provided) */
-  threadId?: string;
-  /** User or entity associated with the thread */
-  resourceId: string;
-  /** Optional metadata for thread categorization */
-  metadata?: Record<string, unknown>;
-}
 
 /**
  * Manages conversation threads to ensure consistent memory access
@@ -53,8 +27,15 @@ export class ThreadManager {
    *
    * @param options - Thread creation options
    * @returns Thread information including the ID
+   * @throws ThreadManagerError if validation fails
    */
   public async createThread(options: CreateThreadOptions): Promise<ThreadInfo> {
+    // Validate input
+    const parseResult = CreateThreadOptionsSchema.safeParse(options);
+    if (!parseResult.success) {
+      logger.error(JSON.stringify({ event: "thread.create.validation_failed", errors: parseResult.error.errors, options }));
+      throw new ThreadManagerError("Invalid thread creation options");
+    }
     const span = createAISpan("thread.create", { resourceId: options.resourceId });
     logger.info("Creating thread", { resourceId: options.resourceId, metadata: options.metadata });
     const startTime = Date.now();
@@ -72,7 +53,7 @@ export class ThreadManager {
         this.resourceThreads.set(options.resourceId, new Set());
       }
       this.resourceThreads.get(options.resourceId)?.add(threadId);
-      logger.info("Thread created", { threadId, resourceId: options.resourceId });
+      logger.info(JSON.stringify({ event: "thread.created", threadId, resourceId: options.resourceId }));
       span.setStatus({ code: 1 });
       signoz.recordMetrics(span, { latencyMs: Date.now() - startTime, status: "success" });
       runId = await createLangSmithRun("thread.create", [options.resourceId]);
@@ -81,9 +62,9 @@ export class ThreadManager {
     } catch (error) {
       signoz.recordMetrics(span, { latencyMs: Date.now() - startTime, status: "error", errorMessage: String(error) });
       if (runId) await trackFeedback(runId, { score: 0, comment: "Thread creation failed", value: error });
-      logger.error("Failed to create thread", { error });
+      logger.error(JSON.stringify({ event: "thread.create.failed", error: String(error) }));
       span.setStatus({ code: 2, message: String(error) });
-      throw error;
+      throw new ThreadManagerError(String(error));
     } finally {
       span.end();
     }
@@ -96,14 +77,15 @@ export class ThreadManager {
    * @returns Thread information or undefined if not found
    */
   public getThread(threadId: string): ThreadInfo | undefined {
+    // TODO: Add access control check here if threads are user-specific
     const span = createAISpan("thread.get", { threadId });
     try {
       const thread = this.threads.get(threadId);
-      logger.info("Get thread", { threadId, found: !!thread });
+      logger.info(JSON.stringify({ event: "thread.get", threadId, found: !!thread }));
       span.setStatus({ code: 1 });
       return thread;
     } catch (error) {
-      logger.error("Failed to get thread", { error });
+      logger.error(JSON.stringify({ event: "thread.get.failed", error: String(error) }));
       span.setStatus({ code: 2, message: String(error) });
       return undefined;
     } finally {
@@ -118,17 +100,18 @@ export class ThreadManager {
    * @returns Array of thread information objects
    */
   public getThreadsByResource(resourceId: string): ThreadInfo[] {
+    // TODO: Add access control check here if threads are user-specific
     const span = createAISpan("thread.getByResource", { resourceId });
     try {
       const threadIds = this.resourceThreads.get(resourceId) || new Set();
       const threads = Array.from(threadIds)
         .map((id) => this.threads.get(id))
         .filter((thread): thread is ThreadInfo => thread !== undefined);
-      logger.info("Get threads by resource", { resourceId, count: threads.length });
+      logger.info(JSON.stringify({ event: "thread.getByResource", resourceId, count: threads.length }));
       span.setStatus({ code: 1 });
       return threads;
     } catch (error) {
-      logger.error("Failed to get threads by resource", { error });
+      logger.error(JSON.stringify({ event: "thread.getByResource.failed", error: String(error) }));
       span.setStatus({ code: 2, message: String(error) });
       return [];
     } finally {
@@ -147,16 +130,16 @@ export class ThreadManager {
     try {
       const threads = this.getThreadsByResource(resourceId);
       if (threads.length === 0) {
-        logger.info("No threads found for resource", { resourceId });
+        logger.info(JSON.stringify({ event: "thread.getMostRecent", resourceId, found: false }));
         span.setStatus({ code: 1 });
         return undefined;
       }
       const mostRecent = threads.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
-      logger.info("Most recent thread", { resourceId, threadId: mostRecent.id });
+      logger.info(JSON.stringify({ event: "thread.getMostRecent", resourceId, threadId: mostRecent.id }));
       span.setStatus({ code: 1 });
       return mostRecent;
     } catch (error) {
-      logger.error("Failed to get most recent thread", { error });
+      logger.error(JSON.stringify({ event: "thread.getMostRecent.failed", error: String(error) }));
       span.setStatus({ code: 2, message: String(error) });
       return undefined;
     } finally {
@@ -170,6 +153,7 @@ export class ThreadManager {
    * @param resourceId - The resource ID to get or create a thread for
    * @param metadata - Optional metadata for the thread if created
    * @returns Thread information with a consistent ID
+   * @throws ThreadManagerError if creation fails
    */
   public async getOrCreateThread(
     resourceId: string,
@@ -179,18 +163,18 @@ export class ThreadManager {
     try {
       const existingThread = this.getMostRecentThread(resourceId);
       if (existingThread) {
-        logger.info("Found existing thread", { resourceId, threadId: existingThread.id });
+        logger.info(JSON.stringify({ event: "thread.getOrCreate", resourceId, threadId: existingThread.id, found: true }));
         span.setStatus({ code: 1 });
         return existingThread;
       }
-      logger.info("No existing thread, creating new", { resourceId });
+      logger.info(JSON.stringify({ event: "thread.getOrCreate", resourceId, found: false }));
       const newThread = await this.createThread({ resourceId, metadata });
       span.setStatus({ code: 1 });
       return newThread;
     } catch (error) {
-      logger.error("Failed to get or create thread", { error });
+      logger.error(JSON.stringify({ event: "thread.getOrCreate.failed", error: String(error) }));
       span.setStatus({ code: 2, message: String(error) });
-      throw error;
+      throw new ThreadManagerError(String(error));
     } finally {
       span.end();
     }
@@ -208,11 +192,11 @@ export class ThreadManager {
       const thread = this.threads.get(threadId);
       if (thread) {
         thread.lastReadAt = date;
-        logger.info("Marked thread as read", { threadId, date });
+        logger.info(JSON.stringify({ event: "thread.markAsRead", threadId, date }));
       }
       span.setStatus({ code: 1 });
     } catch (error) {
-      logger.error("Failed to mark thread as read", { error });
+      logger.error(JSON.stringify({ event: "thread.markAsRead.failed", error: String(error) }));
       span.setStatus({ code: 2, message: String(error) });
     } finally {
       span.end();
@@ -232,11 +216,11 @@ export class ThreadManager {
         const lastRead = this.threadReadStatus.get(thread.id);
         return !lastRead || thread.createdAt > lastRead;
       });
-      logger.info("Get unread threads by resource", { resourceId, count: unread.length });
+      logger.info(JSON.stringify({ event: "thread.getUnreadByResource", resourceId, count: unread.length }));
       span.setStatus({ code: 1 });
       return unread;
     } catch (error) {
-      logger.error("Failed to get unread threads by resource", { error });
+      logger.error(JSON.stringify({ event: "thread.getUnreadByResource.failed", error: String(error) }));
       span.setStatus({ code: 2, message: String(error) });
       return [];
     } finally {

@@ -591,3 +591,50 @@ export { toolGroups as groups };
 export default allToolsMap;
 
 export type toolIds = keyof typeof allTools; // Type for tool IDs
+
+/**
+ * Thread manager for conversation/session management and tracing.
+ */
+export { threadManager } from "../utils/thread-manager";
+
+/**
+ * If your tool needs to be thread-aware (e.g., maintains state or needs tracing),
+ * accept a `threadId` as part of the input schema and log it in all actions.
+ * Example:
+ *   inputSchema: z.object({ ... , threadId: z.string() })
+ *   // In your execute function:
+ *   logger.info({ event: "tool.execute", tool: "myTool", threadId, ... })
+ */
+
+const threadEchoLogger = createLogger({ name: "thread-echo-tool", level: "info" });
+
+/**
+ * Thread-aware tool for echoing threadId and message for tracing/debugging.
+ */
+export const threadEchoTool = createTool({
+  id: "thread-echo",
+  description: "Echoes the threadId for tracing and debugging.",
+  inputSchema: z.object({
+    threadId: z.string(),
+    message: z.string(),
+  }),
+  outputSchema: z.object({
+    echoedThreadId: z.string(),
+    message: z.string(),
+  }),
+  async execute({ context }) {
+    threadEchoLogger.info(JSON.stringify({
+      event: "tool.execute",
+      tool: "thread-echo",
+      threadId: context.threadId,
+      message: context.message,
+    }));
+    return {
+      echoedThreadId: context.threadId,
+      message: context.message,
+    };
+  },
+});
+
+// Add to coreTools for registration
+coreTools.push(threadEchoTool);

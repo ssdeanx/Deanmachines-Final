@@ -21,6 +21,9 @@ import {
 } from "./config/index";
 import { createResponseHook } from "../hooks";
 import { allToolsMap } from "../tools";
+import { threadManager } from "../utils/thread-manager";
+import * as MastraTypes from "../types";
+import { AgentConfigError } from "../types";
 
 // Configure logger for agent initialization
 const logger = createLogger({ name: "agent-initialization", level: "info" });
@@ -33,7 +36,14 @@ const logger = createLogger({ name: "agent-initialization", level: "info" });
  * @param params.memory - The memory instance to be injected into the agent (following RULE-MemoryInjection)
  * @param params.onError - Optional error handler callback function
  * @returns A configured Agent instance
- * @throws Error if required tools are not available
+ * @throws AgentConfigError if required tools are not available or config is invalid
+ *
+ * @example
+ * const agent = createAgentFromConfig({
+ *   config: myAgentConfig,
+ *   memory: sharedMemory,
+ *   onError: async (err) => ({ text: err.message })
+ * });
  */
 export function createAgentFromConfig({
   config,
@@ -46,7 +56,7 @@ export function createAgentFromConfig({
 }): Agent {
   // Validate configuration
   if (!config.id || !config.name || !config.instructions) {
-    throw new Error(
+    throw new AgentConfigError(
       `Invalid agent configuration for ${config.id || "unknown agent"}`
     );
   }
@@ -101,6 +111,29 @@ export function createAgentFromConfig({
         error instanceof Error ? error.message : String(error)
       }`
     );
+    throw error;
+  }
+}
+
+/**
+ * Example: Assign or retrieve a thread for an agent's resource
+ * @param resourceId - The resource ID (e.g., user ID) to associate with the thread
+ * @param metadata - Optional metadata for the thread
+ * @returns Promise resolving to ThreadInfo
+ *
+ * @example
+ * const thread = await getOrCreateAgentThread("user-123", { foo: "bar" });
+ */
+export async function getOrCreateAgentThread(
+  resourceId: string,
+  metadata?: MastraTypes.CreateThreadOptions["metadata"]
+): Promise<MastraTypes.ThreadInfo> {
+  try {
+    const thread = await threadManager.getOrCreateThread(resourceId, metadata);
+    logger.info(`Thread assigned to resource ${resourceId}: ${thread.id}`);
+    return thread;
+  } catch (error) {
+    logger.error(`Failed to get or create thread for resource ${resourceId}: ${error instanceof Error ? error.message : String(error)}`);
     throw error;
   }
 }

@@ -40,6 +40,11 @@ export namespace github {
   }
 }
 
+/**
+ * GitHub tools for Mastra, now thread-aware.
+ * All tool input schemas accept an optional threadId for tracing and debugging.
+ * Each tool logs the threadId (if present) at the start of execution.
+ */
 // --- Zod Output Schema for GitHub User (SCHEMA-GITHUB-USER) ---
 const GitHubUserSchema = z.object({
   login: z.string(),
@@ -223,22 +228,24 @@ export class GitHubClient extends AIFunctionsProvider {
     description: "Get a user by username.",
     inputSchema: z.object({
       username: z.string().describe("The username of the user to get."),
+      threadId: z.string().optional().describe("The thread ID for tracing."),
     }),
   })
   async getUserByUsername(
-    usernameOrOpts: string | { username: string }
+    input: { username: string; threadId?: string }
   ): Promise<github.User> {
-    const { username } =
-      typeof usernameOrOpts === "string"
-        ? { username: usernameOrOpts }
-        : usernameOrOpts;
-
-    const res = await this.octokit.request(`GET /users/${username}`, {
+    if (input.threadId) {
+      console.info(JSON.stringify({
+        event: "github_get_user_by_username",
+        threadId: input.threadId,
+        username: input.username,
+      }));
+    }
+    const res = await this.octokit.request(`GET /users/${input.username}`, {
       headers: {
         "X-GitHub-Api-Version": "2022-11-28",
       },
     });
-
     return res.data;
   }
 
@@ -253,10 +260,18 @@ export class GitHubClient extends AIFunctionsProvider {
       sort: z.enum(["stars", "forks", "updated", "help-wanted-issues"]).optional().describe("Sort field (stars, forks, updated, help-wanted-issues)"),
       order: z.enum(["asc", "desc"]).optional().describe("Order (asc or desc)"),
       per_page: z.number().int().optional().default(10),
+      threadId: z.string().optional().describe("The thread ID for tracing."),
     }),
   })
-  async searchRepositories(opts: { q: string; sort?: "stars"|"forks"|"updated"|"help-wanted-issues"; order?: "asc"|"desc"; per_page?: number }) {
-    const res = await this.octokit.request('GET /search/repositories', opts);
+  async searchRepositories(input: { q: string; sort?: "stars"|"forks"|"updated"|"help-wanted-issues"; order?: "asc"|"desc"; per_page?: number; threadId?: string }) {
+    if (input.threadId) {
+      console.info(JSON.stringify({
+        event: "github_search_repositories",
+        threadId: input.threadId,
+        q: input.q,
+      }));
+    }
+    const res = await this.octokit.request('GET /search/repositories', input);
     return { repositories: res.data.items };
   }
 
@@ -269,10 +284,18 @@ export class GitHubClient extends AIFunctionsProvider {
     inputSchema: z.object({
       username: z.string().describe("GitHub username"),
       per_page: z.number().int().optional().default(10),
+      threadId: z.string().optional().describe("The thread ID for tracing."),
     }),
   })
-  async listUserRepos(opts: { username: string; per_page?: number }) {
-    const res = await this.octokit.request('GET /users/{username}/repos', opts);
+  async listUserRepos(input: { username: string; per_page?: number; threadId?: string }) {
+    if (input.threadId) {
+      console.info(JSON.stringify({
+        event: "github_list_user_repos",
+        threadId: input.threadId,
+        username: input.username,
+      }));
+    }
+    const res = await this.octokit.request('GET /users/{username}/repos', input);
     return { repositories: res.data };
   }
 
@@ -285,10 +308,19 @@ export class GitHubClient extends AIFunctionsProvider {
     inputSchema: z.object({
       owner: z.string(),
       repo: z.string(),
+      threadId: z.string().optional().describe("The thread ID for tracing."),
     }),
   })
-  async getRepo(opts: { owner: string; repo: string }) {
-    const res = await this.octokit.request('GET /repos/{owner}/{repo}', opts);
+  async getRepo(input: { owner: string; repo: string; threadId?: string }) {
+    if (input.threadId) {
+      console.info(JSON.stringify({
+        event: "github_get_repo",
+        threadId: input.threadId,
+        owner: input.owner,
+        repo: input.repo,
+      }));
+    }
+    const res = await this.octokit.request('GET /repos/{owner}/{repo}', input);
     return res.data;
   }
 
@@ -303,10 +335,19 @@ export class GitHubClient extends AIFunctionsProvider {
       repo: z.string(),
       state: z.enum(["open", "closed", "all"]).optional().default('open'),
       per_page: z.number().int().optional().default(10),
+      threadId: z.string().optional().describe("The thread ID for tracing."),
     }),
   })
-  async listRepoIssues(opts: { owner: string; repo: string; state?: "open"|"closed"|"all"; per_page?: number }) {
-    const res = await this.octokit.request('GET /repos/{owner}/{repo}/issues', opts);
+  async listRepoIssues(input: { owner: string; repo: string; state?: "open"|"closed"|"all"; per_page?: number; threadId?: string }) {
+    if (input.threadId) {
+      console.info(JSON.stringify({
+        event: "github_list_repo_issues",
+        threadId: input.threadId,
+        owner: input.owner,
+        repo: input.repo,
+      }));
+    }
+    const res = await this.octokit.request('GET /repos/{owner}/{repo}/issues', input);
     return { issues: res.data };
   }
 
@@ -321,10 +362,19 @@ export class GitHubClient extends AIFunctionsProvider {
       repo: z.string(),
       state: z.enum(["open", "closed", "all"]).optional().default('open'),
       per_page: z.number().int().optional().default(10),
+      threadId: z.string().optional().describe("The thread ID for tracing."),
     }),
   })
-  async listRepoPulls(opts: { owner: string; repo: string; state?: "open"|"closed"|"all"; per_page?: number }) {
-    const res = await this.octokit.request('GET /repos/{owner}/{repo}/pulls', opts);
+  async listRepoPulls(input: { owner: string; repo: string; state?: "open"|"closed"|"all"; per_page?: number; threadId?: string }) {
+    if (input.threadId) {
+      console.info(JSON.stringify({
+        event: "github_list_repo_pulls",
+        threadId: input.threadId,
+        owner: input.owner,
+        repo: input.repo,
+      }));
+    }
+    const res = await this.octokit.request('GET /repos/{owner}/{repo}/pulls', input);
     return { pulls: res.data };
   }
 
@@ -337,10 +387,19 @@ export class GitHubClient extends AIFunctionsProvider {
     inputSchema: z.object({
       owner: z.string(),
       repo: z.string(),
+      threadId: z.string().optional().describe("The thread ID for tracing."),
     }),
   })
-  async listRepoBranches(opts: { owner: string; repo: string }) {
-    const res = await this.octokit.request('GET /repos/{owner}/{repo}/branches', opts);
+  async listRepoBranches(input: { owner: string; repo: string; threadId?: string }) {
+    if (input.threadId) {
+      console.info(JSON.stringify({
+        event: "github_list_repo_branches",
+        threadId: input.threadId,
+        owner: input.owner,
+        repo: input.repo,
+      }));
+    }
+    const res = await this.octokit.request('GET /repos/{owner}/{repo}/branches', input);
     return { branches: res.data };
   }
 
@@ -354,10 +413,19 @@ export class GitHubClient extends AIFunctionsProvider {
       owner: z.string(),
       repo: z.string(),
       per_page: z.number().int().optional().default(10),
+      threadId: z.string().optional().describe("The thread ID for tracing."),
     }),
   })
-  async listRepoCommits(opts: { owner: string; repo: string; per_page?: number }) {
-    const res = await this.octokit.request('GET /repos/{owner}/{repo}/commits', opts);
+  async listRepoCommits(input: { owner: string; repo: string; per_page?: number; threadId?: string }) {
+    if (input.threadId) {
+      console.info(JSON.stringify({
+        event: "github_list_repo_commits",
+        threadId: input.threadId,
+        owner: input.owner,
+        repo: input.repo,
+      }));
+    }
+    const res = await this.octokit.request('GET /repos/{owner}/{repo}/commits', input);
     return { commits: res.data };
   }
 
@@ -371,10 +439,19 @@ export class GitHubClient extends AIFunctionsProvider {
       owner: z.string(),
       repo: z.string(),
       per_page: z.number().int().optional().default(10),
+      threadId: z.string().optional().describe("The thread ID for tracing."),
     }),
   })
-  async listRepoReleases(opts: { owner: string; repo: string; per_page?: number }) {
-    const res = await this.octokit.request('GET /repos/{owner}/{repo}/releases', opts);
+  async listRepoReleases(input: { owner: string; repo: string; per_page?: number; threadId?: string }) {
+    if (input.threadId) {
+      console.info(JSON.stringify({
+        event: "github_list_repo_releases",
+        threadId: input.threadId,
+        owner: input.owner,
+        repo: input.repo,
+      }));
+    }
+    const res = await this.octokit.request('GET /repos/{owner}/{repo}/releases', input);
     return { releases: res.data };
   }
 
@@ -387,10 +464,18 @@ export class GitHubClient extends AIFunctionsProvider {
     inputSchema: z.object({
       q: z.string().describe("Search query (e.g. 'repo:owner/repo filename:main.js')"),
       per_page: z.number().int().optional().default(10),
+      threadId: z.string().optional().describe("The thread ID for tracing."),
     }),
   })
-  async searchCode(opts: { q: string; per_page?: number }) {
-    const res = await this.octokit.request('GET /search/code', opts);
+  async searchCode(input: { q: string; per_page?: number; threadId?: string }) {
+    if (input.threadId) {
+      console.info(JSON.stringify({
+        event: "github_search_code",
+        threadId: input.threadId,
+        q: input.q,
+      }));
+    }
+    const res = await this.octokit.request('GET /search/code', input);
     return { items: res.data.items };
   }
 }

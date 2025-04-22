@@ -256,5 +256,73 @@ export interface LangSmithConfig {
   enabled?: boolean;
 }
 
+/**
+ * Thread information with creation metadata
+ */
+export interface ThreadInfo {
+  /** Unique thread identifier */
+  id: string;
+  /** User or entity associated with the thread */
+  resourceId: string;
+  /** When the thread was created */
+  createdAt: Date;
+  /** Optional metadata for thread categorization */
+  metadata?: Record<string, unknown>;
+  /** When the thread was last read */
+  lastReadAt?: Date;
+}
+
+/**
+ * Thread creation options
+ */
+export interface CreateThreadOptions {
+  /** Optional predefined thread ID (generates UUID if not provided) */
+  threadId?: string;
+  /** User or entity associated with the thread */
+  resourceId: string;
+  /** Optional metadata for thread categorization */
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Custom error for thread management failures
+ */
+export class ThreadManagerError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ThreadManagerError";
+  }
+}
+
+/**
+ * Custom error for agent configuration failures
+ */
+export class AgentConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AgentConfigError";
+  }
+}
+
+/**
+ * Zod schema for ThreadInfo
+ */
+export const ThreadInfoSchema = z.object({
+  id: z.string(),
+  resourceId: z.string(),
+  createdAt: z.date(),
+  metadata: z.record(z.unknown()).optional(),
+  lastReadAt: z.date().optional(),
+});
+
+/**
+ * Zod schema for CreateThreadOptions
+ */
+export const CreateThreadOptionsSchema = z.object({
+  threadId: z.string().optional(),
+  resourceId: z.string(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
 // Re-export types from services for backward compatibility
 export * from './services/types';

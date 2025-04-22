@@ -148,7 +148,6 @@ export const researchAgentConfig: BaseAgentConfig = {
     "create-graph-rag",
     "graph-rag-query",
     "wikipedia_get_page_summary",
-    "puppeteer_web_automator",
   ],
 };
 

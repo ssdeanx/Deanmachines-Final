@@ -26,6 +26,8 @@ import { codeDocumenterAgent } from "./codeDocumenter.agent";
 import { marketResearchAgent } from "./marketResearch.agent";
 import { socialMediaAgent } from "./socialMedia.agent";
 import { seoAgent } from "./seoAgent.agent";
+import { masterAgent } from "./master.agent";
+
 // Export individual agents
 export {
   // Core agents
@@ -37,6 +39,7 @@ export {
   agenticAssistant,
   coderAgent,
   copywriterAgent,
+  masterAgent,
 
   // Coding team agents
   architectAgent,
@@ -59,6 +62,7 @@ const agents = {
   rlTrainerAgent, // RL Trainer agent included
   dataManagerAgent, // Data Manager agent included
   agenticAssistant,
+  masterAgent,
 
   // Coding team agents
   coderAgent,

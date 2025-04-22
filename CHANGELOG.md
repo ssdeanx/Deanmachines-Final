@@ -1,5 +1,94 @@
 # Changelog
 
+## [Unreleased] - 2025-04-27 15:42 UTC
+
+### How to Use This Changelog (Prompt Engineering & Agent Guidance)
+
+- **Purpose:** This changelog is both a technical log and a prompt design guide. It is structured to help future agents (human or AI) quickly understand, extend, and reason about the codebase and its evolution.
+- **Agent Onboarding:**
+  - Read each section as a direct instruction or example for what's changed and what to do next.
+  - Use the provided examples and reasoning to align your own changes and debugging steps.
+  - If you are a new agent, start with "Robust Instructions" and "Prompt Engineering Reference" sections below.
+- **Prompt Engineering Techniques Used:**
+  - **Zero-Shot:** Direct, unambiguous instructions for new features or fixes.
+  - **Few-Shot:** Input/output or before/after examples for clarity.
+  - **Chain-of-Thought:** Reasoning and step-by-step explanations for complex changes.
+  - **Tree-of-Thought:** If multiple solutions exist, alternatives are documented.
+  - **Iterative Prompting:** Each change includes "Next Steps" or "Follow-up" for future agents.
+  - **Negative Prompting:** Explicitly state what should NOT be done (e.g., "Do not send threadId to APIs").
+  - **ReAct:** For tool-using agents, both reasoning and action are described.
+- **Agent Best Practices:**
+  - When making changes, always add your reasoning, examples, and next steps.
+  - Use this changelog as a living document for both technical and prompt design evolution.
+  - If you encounter ambiguity, add clarifying notes or questions for the next agent.
+
+---
+
+### Added / Updated
+
+- **Thread ID Tracing for Tools**
+  - Added optional `threadId` to input schemas in: `wikibase.ts`, `wikidata-client.ts`, `brave-search.ts`, `arxiv.ts`.
+  - Each tool logs `threadId` at the start of execution for trace/debug.
+  - `threadId` is **not** sent to external APIs—internal use only.
+  - **Example (Few-Shot):**
+    - Input: `{ query: "AI", threadId: "abc123" }`
+    - Log: `{ event: "tool.execute", tool: "wikibase_search", threadId: "abc123" }`
+  - **Next Steps:** Continue this pattern for all new tools. See "Robust Instructions" below.
+
+---
+
+### Robust Instructions to Continue Thread ID Integration
+
+**Background & Rationale**
+
+- `threadId` is a unique identifier for a conversation, session, or workflow, enabling robust tracing, debugging, and memory management.
+- Managed by `thread-manager` (`functions/src/mastra/utils/thread-manager.ts`).
+- Types: `ThreadInfo`, `CreateThreadOptions` (see `functions/src/mastra/types.ts`).
+- Used throughout the agent and tool infrastructure for strong typing and consistency.
+
+**How to Integrate**
+
+1. **Input Schema:** Add `threadId` as optional to all tool schemas.
+2. **Logging:** Log `threadId` at the start of each tool's execution.
+3. **API Calls:** Never send `threadId` to third-party APIs unless required.
+4. **Thread Manager:** Use `threadManager` for thread lifecycle.
+5. **Documentation:** Document `threadId` in JSDoc and Zod schema.
+6. **Testing:** Test that `threadId` is logged, not sent externally.
+7. **Agent Reasoning:** For complex changes, add a "Chain-of-Thought" block explaining your reasoning and steps.
+8. **Agent Examples:** For new features, add a usage example (Few-Shot) and, if possible, a before/after diff.
+9. **Agent Next Steps:** Always add a "Next Steps" or "Follow-up" bullet for the next agent.
+
+**Best Practices**
+
+- Always make `threadId` optional.
+- Use structured, consistent logging.
+- Never leak internal IDs to third parties.
+- Add reasoning or "why" for complex changes (Chain-of-Thought).
+- For new features, add a usage example (Few-Shot).
+- If you try multiple solutions, document alternatives (Tree-of-Thought).
+- If you encounter a limitation, document it and suggest a workaround or open question.
+
+---
+
+### Prompt Engineering Reference (2025)
+
+- **Zero-Shot:** Direct queries, no examples.
+- **Few-Shot:** Add input/output examples for clarity.
+- **Chain-of-Thought:** Explain steps for complex changes.
+- **Tree-of-Thought:** If multiple solutions, document alternatives.
+- **Iterative Prompting:** Add "Next Steps" for future agents.
+- **Negative Prompting:** Specify what not to do (e.g., "Do not send threadId to APIs").
+- **ReAct:** For tool-using agents, describe both reasoning and action.
+
+**References:**
+
+- [Prompt Engineering Guide for 2025 – viso.ai](https://viso.ai/deep-learning/prompt-engineering/)
+- [10 Prompt Engineering Techniques Every Beginner Should Know – Google Cloud Community/Medium](https://medium.com/google-cloud/10-prompt-engineering-techniques-every-beginner-should-know-bf6c195916c7)
+
+---
+
+_Next agent: Use this changelog as both a technical log and a prompt design guide. Add your reasoning, examples, and next steps for maximum clarity and maintainability. If you are an AI agent, always explain your actions and decisions for human review._
+
 ## [0.1.6] - 2025-04-21
 
 ### Comprehensive 10/10 Upgrade: All Chat Components (Production-Ready, Bio Mech Weave Standard)

@@ -112,7 +112,6 @@ export { GitHubUserSchema };
 export { TickerDetailsSchema };
 export { SubredditPostSchema };
 export * from "../services/signoz";
-export * from "../services/tracing";
 export * from "./polygon";
 export * from "./reddit";
 export * from "./mcptool";

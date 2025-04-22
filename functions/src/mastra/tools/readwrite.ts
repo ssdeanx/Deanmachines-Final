@@ -5,12 +5,22 @@
  * with support for different file formats, encodings, and write modes.
  */
 
-import { createTool } from "@mastra/core/tools";
+import { createTool, ToolExecutionContext } from "@mastra/core/tools";
 import { z } from "zod";
 import fs from "fs-extra";
+
 import { resolve, dirname, extname, join } from "path";
 import { createLangSmithRun, trackFeedback } from "../services/langsmith";
-
+import {
+  ReadFileInputSchema, ReadFileOutputSchema,
+  WriteFileInputSchema, WriteFileOutputSchema,
+  EditFileInputSchema, EditFileOutputSchema,
+  DeleteFileInputSchema, DeleteFileOutputSchema,
+  ListFilesInputSchema, ListFilesOutputSchema,
+  ReadKnowledgeFileInputSchema, ReadKnowledgeFileOutputSchema,
+  WriteKnowledgeFileInputSchema, WriteKnowledgeFileOutputSchema,
+  CreateFileInputSchema, CreateFileOutputSchema,
+} from "./readwriteschema";
 /**
  * Supported file encoding types
  */
@@ -114,7 +124,9 @@ export const readFileTool = createTool({
       .optional()
       .describe("Error message if the operation failed"),
   }),
-  execute: async ({ context }) => {
+  execute: async (
+    { context }: { context: z.infer<typeof ReadFileInputSchema> }
+  ) => {
     const runId = await createLangSmithRun("read-file", ["file", "read"]);
 
     try {
@@ -150,10 +162,10 @@ export const readFileTool = createTool({
       const stats = await fs.stat(absolutePath);
 
       // Check file size
-      if (stats.size > context.maxSizeBytes) {
+      if (stats.size > 10485760) {
         await trackFeedback(runId, {
           score: 0,
-          comment: `File too large: ${stats.size} bytes (max: ${context.maxSizeBytes} bytes)`,
+          comment: `File too large: ${stats.size} bytes (max: 10MB)`,
           key: "file_read_failure",
         });
 
@@ -168,20 +180,18 @@ export const readFileTool = createTool({
             readLines: 0,
           },
           success: false,
-          error: `File too large: ${stats.size} bytes (max: ${context.maxSizeBytes} bytes)`,
+          error: `File too large: ${stats.size} bytes (max: 10MB)`,
         };
       }
 
       // Read the file
       const content = await fs.readFile(absolutePath, context.encoding);
-
-      // Handle line-based reading if requested
-      let processedContent = content;
-      const allLines = content.split(/\r?\n/);
+      const contentString = content.toString();
+      let processedContent = contentString;
+      const allLines = contentString.split(/\r?\n/); // Now this works!
       let readLines = allLines.length;
-
-      if (context.startLine > 0 || context.endLine !== undefined) {
-        const startLine = Math.max(0, context.startLine);
+      if (context.startLine !== undefined || context.endLine !== undefined) {
+        const startLine = Math.max(0, context.startLine || 0);
         const endLine =
           context.endLine !== undefined
             ? Math.min(context.endLine, allLines.length - 1)
@@ -314,7 +324,13 @@ export const writeToFileTool = createTool({
     success: z.boolean().describe("Whether the operation was successful"),
     error: z.string().optional().describe("Error message if the operation failed"),
   }),
-  execute: async ({ context }) => {
+  execute: async (
+    executionContext: ToolExecutionContext<
+      z.infer<typeof WriteFileInputSchema>,
+      z.infer<typeof WriteFileOutputSchema>
+    >
+  ) => {
+    const { context } = executionContext;
     const runId = await createLangSmithRun("write-file", ["file", "write"]);
 
     try {
@@ -461,7 +477,13 @@ export const readKnowledgeFileTool = createTool({
       .optional()
       .describe("Error message if the operation failed"),
   }),
-  execute: async ({ context }) => {
+  execute: async (
+    executionContext: ToolExecutionContext<
+      z.infer<typeof ReadKnowledgeFileInputSchema>,
+      z.infer<typeof ReadKnowledgeFileOutputSchema>
+    >
+  ) => {
+    const { context } = executionContext;
     const runId = await createLangSmithRun("read-knowledge-file", [
       "knowledge",
       "read",
@@ -552,7 +574,13 @@ export const writeKnowledgeFileTool = createTool({
       .optional()
       .describe("Error message if the operation failed"),
   }),
-  execute: async ({ context, container }) => { // Destructure container here
+  execute: async (
+    executionContext: ToolExecutionContext<
+      z.infer<typeof WriteKnowledgeFileInputSchema>,
+      z.infer<typeof WriteKnowledgeFileOutputSchema>
+    >
+  ) => {
+    const { context, container } = executionContext;
     const runId = await createLangSmithRun("write-knowledge-file", [
       "knowledge",
       "write",
@@ -636,7 +664,13 @@ export const createFileTool = createTool({
     success: z.boolean(),
     error: z.string().optional(),
   }),
-  execute: async ({ context }) => {
+  execute: async (
+    executionContext: ToolExecutionContext<
+      z.infer<typeof CreateFileInputSchema>,
+      z.infer<typeof CreateFileOutputSchema>
+    >
+  ) => {
+    const { context } = executionContext;
     const absolutePath = resolve(context.path);
     try {
       // Check if file exists
@@ -699,7 +733,13 @@ export const editFileTool = createTool({
     success: z.boolean(),
     error: z.string().optional(),
   }),
-  execute: async ({ context }) => {
+  execute: async (
+    executionContext: ToolExecutionContext<
+      z.infer<typeof EditFileInputSchema>,
+      z.infer<typeof EditFileOutputSchema>
+    >
+  ) => {
+    const { context } = executionContext;
     const absolutePath = resolve(context.path);
     try {
       let content = await fs.readFile(absolutePath, context.encoding);
@@ -754,7 +794,13 @@ export const deleteFileTool = createTool({
     success: z.boolean(),
     error: z.string().optional(),
   }),
-  execute: async ({ context }) => {
+  execute: async (
+    executionContext: ToolExecutionContext<
+      z.infer<typeof DeleteFileInputSchema>,
+      z.infer<typeof DeleteFileOutputSchema>
+    >
+  ) => {
+    const { context } = executionContext;
     const absolutePath = resolve(context.path);
     try {
       await fs.remove(absolutePath);
@@ -788,7 +834,13 @@ export const listFilesTool = createTool({
     success: z.boolean(),
     error: z.string().optional(),
   }),
-  execute: async ({ context }) => {
+  execute: async (
+    executionContext: ToolExecutionContext<
+      z.infer<typeof ListFilesInputSchema>,
+      z.infer<typeof ListFilesOutputSchema>
+    >
+  ) => {
+    const { context } = executionContext;
     const absolutePath = resolve(context.path);
     const results: Array<{ name: string; path: string; isDirectory: boolean; extension: string }> = [];
     async function walk(dir: string) {

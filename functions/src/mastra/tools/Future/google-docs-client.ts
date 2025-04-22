@@ -57,20 +57,38 @@ export class GoogleDocsClient extends AIFunctionsProvider {
     args: Simplify<
       SetRequired<google.docs_v1.Params$Resource$Documents$Get, 'documentId'>
     >
-  ): Promise<googleDocs.Document> {
-    const { documentId, ...opts } = args
-
+  ): Promise<{ document: googleDocs.Document }> {
+    const { documentId, ...opts } = args;
     const { data } = await this.docs.documents.get({
       ...opts,
       documentId
-    })
-
-    return convertDocument(data)
+    });
+    return { document: convertDocument(data) };
   }
 }
+
+export const GoogleDocsGetDocumentOutputSchema = z.object({
+  document: z.unknown().describe("The full Google Docs document object (pruned of null/undefined fields)."),
+});
 
 function convertDocument(
   data: google.docs_v1.Schema$Document
 ): googleDocs.Document {
   return pruneNullOrUndefinedDeep(data)
 }
+
+// Patch the tool for Mastra compatibility
+import { createMastraTools } from "@agentic/mastra";
+
+// Register the provider instance (not the method!)
+const dummyDocs = {
+  documents: {
+    get: async () => ({ data: {} }),
+  },
+} as any; // Only for registration/discovery, not for runtime
+const googleDocsClient = new GoogleDocsClient({ docs: dummyDocs });
+
+export const googleDocsTools = createMastraTools(googleDocsClient);
+export const googleDocsGetDocumentTool = googleDocsTools["google_docs_get_document"];
+(googleDocsGetDocumentTool as any).outputSchema = GoogleDocsGetDocumentOutputSchema;
+

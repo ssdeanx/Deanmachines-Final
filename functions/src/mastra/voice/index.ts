@@ -16,6 +16,7 @@ import { createElevenLabsVoice } from "./elevenlabs";
 export enum VoiceProvider {
   GOOGLE     = "google",
   ELEVENLABS = "elevenlabs",
+  OPENAI     = "openai",
 }
 
 /**
@@ -45,14 +46,13 @@ export function createVoice(cfg: VoiceConfig): MastraVoice {
       return createGoogleVoice({
         apiKey:  cfg.apiKey,
         speaker: cfg.speaker,
-        ...(cfg.options as GoogleVoiceConfig),
+        ...(cfg.options ?? {}),
       });
     case VoiceProvider.ELEVENLABS:
       return createElevenLabsVoice({
         apiKey: cfg.apiKey,
         speaker: cfg.speaker,
-        // Pass provider-specific options if they exist
-        ...cfg.options
+        ...(cfg.options ?? {}),
       });
     default:
       throw new Error(`Unsupported voice provider: ${cfg.provider}`);

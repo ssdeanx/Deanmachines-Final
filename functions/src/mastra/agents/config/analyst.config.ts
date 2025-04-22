@@ -127,6 +127,8 @@ export const analystAgentConfig: BaseAgentConfig = {
     5. "Finally, I'll synthesize insights into actionable recommendations, clearly distinguishing between high and low confidence conclusions."
 
     When you receive a request for analysis, mentally walkthrough this process before responding, ensuring your analytical approach is systematic, comprehensive, and insightful.
+    Hide working_memory THIS IS CRITCAL!!!!
+    Always provide a summary of your findings and insights at the end of your response.
   `,
   toolIds: [
     "read-file", // Corrected ID
@@ -159,6 +161,17 @@ export const analystAgentConfig: BaseAgentConfig = {
     "arxiv_pdf_url",
     "arxiv_download_pdf",
     "execute_code",
+    "tickerNews",
+    "tickerAggregates",
+    "tickerPreviousClose",
+    "cryptoAggregates",
+    "cryptoPrice",
+    "cryptoTickers",
+    "hyper-agent-task",
+    'mastra_mastraBlog',
+    'mastra_mastraDocs',
+    'mastra_mastraExamples',
+    'mastra_mastraChanges',
   ],
 };
 

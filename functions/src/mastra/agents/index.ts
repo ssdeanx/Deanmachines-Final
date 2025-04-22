@@ -62,7 +62,7 @@ const agents = {
   rlTrainerAgent, // RL Trainer agent included
   dataManagerAgent, // Data Manager agent included
   agenticAssistant,
-  masterAgent,
+  masterAgent, // masterAgent included
 
   // Coding team agents
   coderAgent,

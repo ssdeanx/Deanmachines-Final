@@ -6,23 +6,25 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { z } from "zod";
 
 // Type for session details (customize as needed)
-export type SessionDetail = {
-  id: string;
-  wsEndpoint: string;
-  [key: string]: any;
-};
+// --- Zod Schemas ---
+export const SessionDetailSchema = z.object({
+  id: z.string(),
+  wsEndpoint: z.string(),
+}).catchall(z.any());
+export type SessionDetail = z.infer<typeof SessionDetailSchema>;
 
-export type Profile = {
-  id: string;
-  name: string;
-  [key: string]: any;
-};
+export const ProfileSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+}).catchall(z.any());
+export type Profile = z.infer<typeof ProfileSchema>;
 
-export type Extension = {
-  id: string;
-  name: string;
-  [key: string]: any;
-};
+export const ExtensionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+}).catchall(z.any());
+export type Extension = z.infer<typeof ExtensionSchema>;
+
 
 // Initialize the Hyperbrowser client
 export const hyperbrowserClient = new Hyperbrowser({
@@ -49,13 +51,14 @@ export const hyperbrowserClient = new Hyperbrowser({
 export async function createHyperbrowserSession(params?: Record<string, any>): Promise<SessionDetail> {
   try {
     const session = await hyperbrowserClient.sessions.create(params);
-    console.info(`Hyperbrowser session created with ID: ${session.id}`);
-    return session as SessionDetail;
+    const parsed = SessionDetailSchema.parse(session);
+    console.info(`Hyperbrowser session created with ID: ${parsed.id}`);
+    return parsed;
   } catch (error) {
     console.error("Failed to create Hyperbrowser session:", error);
     throw error;
   }
-}
+} 
 
 /**
  * Connects to an existing Hyperbrowser session using Puppeteer.
@@ -64,17 +67,18 @@ export async function createHyperbrowserSession(params?: Record<string, any>): P
  */
 export async function connectToHyperbrowserSession(session: SessionDetail): Promise<Browser> {
   try {
+    const parsed = SessionDetailSchema.parse(session);
     const browser = await connect({
-      browserWSEndpoint: session.wsEndpoint,
+      browserWSEndpoint: parsed.wsEndpoint,
       defaultViewport: null,
     });
-    console.info(`Successfully connected to session: ${session.id}`);
+    console.info(`Successfully connected to session: ${parsed.id}`);
     return browser;
   } catch (error) {
     console.error(`Failed to connect to Hyperbrowser session ${session.id}:`, error);
     throw error;
   }
-}
+} 
 
 /**
  * Stops a Hyperbrowser session.
@@ -149,16 +153,16 @@ export async function runHyperAgentTask(task: string, model: string = "gemini-2.
  */
 export async function createProfile(name: string): Promise<Profile> {
   const profile = await hyperbrowserClient.profiles.create({ name });
-  return profile as Profile;
-}
+  return ProfileSchema.parse(profile);
+} 
 
 /**
  * List all browser profiles.
  */
 export async function listProfiles(): Promise<Profile[]> {
   const profiles = await hyperbrowserClient.profiles.list();
-  return profiles as unknown as Profile[];
-}
+  return z.array(ProfileSchema).parse(profiles);
+} 
 
 /**
  * Delete a browser profile by ID.
@@ -173,23 +177,26 @@ export async function deleteProfile(profileId: string): Promise<void> {
  */
 export async function uploadExtension(filePath: string): Promise<Extension> {
   const extService = hyperbrowserClient.extensions as any;
+  let ext: any;
   if (typeof extService.upload === "function") {
-    return await extService.upload({ filePath }) as Extension;
+    ext = await extService.upload({ filePath });
   } else if (typeof extService.create === "function") {
-    return await extService.create({ filePath }) as Extension;
+    ext = await extService.create({ filePath });
   } else if (typeof extService.add === "function") {
-    return await extService.add({ filePath }) as Extension;
+    ext = await extService.add({ filePath });
+  } else {
+    throw new Error("No supported extension upload method found in SDK.");
   }
-  throw new Error("No supported extension upload method found in SDK.");
-}
+  return ExtensionSchema.parse(ext);
+} 
 
 /**
  * List all uploaded extensions.
  */
 export async function listExtensions(): Promise<Extension[]> {
   const extensions = await hyperbrowserClient.extensions.list();
-  return extensions as unknown as Extension[];
-}
+  return z.array(ExtensionSchema).parse(extensions);
+} 
 
 /**
  * Delete an extension by ID.

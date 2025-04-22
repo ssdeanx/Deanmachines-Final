@@ -7,13 +7,15 @@
  * @module config.types
  */
 
-
+import { z } from 'zod'; // Import Zod
 import { Tool } from "@mastra/core/tools";
+import type { VoiceConfig, VoiceProvider } from "../../voice";  // ← reuse!
 
 /**
  * Supported AI model providers
  */
 export type ModelProvider = "google" | "vertex" | "openai" | "anthropic" | "ollama";
+const ModelProviderSchema = z.enum(["google", "vertex", "openai", "anthropic", "ollama"]); // Schema for provider type
 
 /** Default Maximum Tokens for Model Output */
 export const DEFAULT_MAX_TOKENS = 8192;
@@ -313,6 +315,11 @@ export interface FunctionCallingConfig {
    */
   allowedFunctionNames: string[];
 }
+// Schema for FunctionCallingConfig
+const FunctionCallingConfigSchema = z.object({
+  mode: z.enum(["AUTO", "NONE", "ANY"]),
+  allowedFunctionNames: z.array(z.string()),
+});
 
 /**
  * Model configuration options
@@ -343,6 +350,18 @@ export interface ModelConfig {
   /** Provider-specific options */
   providerOptions?: Record<string, unknown>;
 }
+
+// --- Add the Zod schema definition ---
+export const ModelConfigSchema = z.object({
+  provider: ModelProviderSchema,
+  modelId: z.string(),
+  maxTokens: z.number().optional(),
+  temperature: z.number().optional(),
+  topP: z.number().optional(),
+  functionCalling: z.union([z.boolean(), FunctionCallingConfigSchema]).optional(),
+  providerOptions: z.record(z.unknown()).optional(),
+}).describe("Schema for AI model configuration");
+// --- End of addition ---
 
 /**
  * Response hook options interface
@@ -385,7 +404,13 @@ export interface BaseAgentConfig {
 
   /** Optional tools configuration */
   tools?: Tool[];
+
+  /** Optional voice configuration */
+  voiceConfig?: VoiceConfig;  // ← now exactly matches createVoice()
 }
+
+// you can still re-export the enum if you like:
+export { VoiceProvider };
 
 /**
  * Helper function to get a model configuration by key with optional overrides
@@ -471,4 +496,3 @@ export const defaultErrorHandler = async (
 };
 
 export type BaseAgentConfigType = BaseAgentConfig;
-export default BaseAgentConfig;

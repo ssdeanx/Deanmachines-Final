@@ -1,14 +1,86 @@
 import type { Tool } from "@mastra/core/tools";
-import { BaseAgentConfig, DEFAULT_MODELS } from "./config.types";
+import { DEFAULT_MODELS, ModelConfig, ResponseHookOptions, BaseAgentConfig } from "./config.types";
+import { z, type ZodTypeAny } from "zod";
+import { VoiceConfig, VoiceProvider } from "../../voice"; // ← real import
 
-// Optionally: import getToolsFromIds if you need dynamic tool mapping
+
+
+// re-export so master.config.ts can do:
+//    import { VoiceProvider } from "./config.types";
+export { VoiceProvider };
+
+/**
+ * Configuration for retrieving relevant tools for the agent
+ *
+ * @param toolIds - Array of tool identifiers to include
+ * @param allTools - Map of all available tools
+ * @returns Record of tools mapped by their IDs
+ * @throws {Error} When required tools are missing
+ */
+export function getToolsFromIds(
+  toolIds: string[],
+  allTools: ReadonlyMap<
+    string,
+    Tool<z.ZodTypeAny | undefined, z.ZodTypeAny | undefined>
+  >
+): Record<string, Tool<z.ZodTypeAny | undefined, z.ZodTypeAny | undefined>> {
+  const tools: Record<
+    string,
+    Tool<z.ZodTypeAny | undefined, z.ZodTypeAny | undefined>
+  > = {};
+  const missingTools: string[] = [];
+
+  for (const id of toolIds) {
+    const tool = allTools.get(id);
+    if (tool) {
+      tools[id] = tool;
+    } else {
+      missingTools.push(id);
+    }
+  }
+
+  if (missingTools.length > 0) {
+    throw new Error(`Missing required tools: ${missingTools.join(", ")}`);
+  }
+
+  return tools;
+}
+
+// Define Zod schema for ModelConfig based on the ModelConfig type
+// Assuming ModelConfig has 'provider' and 'modelId' based on DEFAULT_MODELS usage
+const modelProviders = ["google", "vertex", "openai", "anthropic", "ollama"] as const; // Based on ModelProvider type definition
+const ModelConfigSchema = z.object({
+  provider: z.enum(modelProviders).describe("The AI model provider"),
+  modelId: z.string().describe("The specific model identifier"),
+  // Add other potential fields if known, e.g., apiKey, options, making them optional if appropriate
+  apiKey: z.string().optional().describe("Optional API key for the provider"),
+  options: z.record(z.any()).optional().describe("Optional provider-specific settings"),
+});
+
+
+// Define Zod schema for MasterAgentConfig
+export const MasterAgentConfigSchema = z.object({
+  id: z.string().describe("Unique identifier for the agent"),
+  name: z.string().describe("Name of the agent"),
+  description: z.string().describe("Description of the agent's purpose"),
+  modelConfig: ModelConfigSchema.describe("Default model configuration for the agent"),
+  instructions: z.string().describe("Instructions or guidelines for the agent"),
+  toolIds: z.array(z.string()).describe("List of tool IDs available to the agent"),
+  voiceConfig: z
+    .object({
+      provider: z.nativeEnum(VoiceProvider),
+      apiKey: z.string().optional(),
+      speaker: z.string().optional(),
+      options: z.record(z.any()).optional(),
+    })
+    .optional(),
+});
 
 export const masterAgentConfig: BaseAgentConfig = {
   id: "master-agent",
   name: "Master Agent",
-  description: "A general-purpose test agent for experimenting with all available tools and workflows.",
-  modelConfig: DEFAULT_MODELS.GOOGLE_MAIN, // Or your preferred default
-  // No strict responseValidation or Zod schema!
+  description: "A test agent for all tools + voice",
+  modelConfig: DEFAULT_MODELS.GOOGLE_MAIN as ModelConfig,
   instructions: `
     # MASTER AGENT ROLE
     You are a flexible, general-purpose agent designed for testing and experimentation.
@@ -24,7 +96,6 @@ export const masterAgentConfig: BaseAgentConfig = {
     - No strict schema is enforced.
   `,
   toolIds: [
-    // Copy all tool IDs from researchAgentConfig for now
     "read-file",
     "write-file",
     "tavily-search",
@@ -66,7 +137,46 @@ export const masterAgentConfig: BaseAgentConfig = {
     "cryptoPrice",
     "cryptoTickers",
     "execute_code",
+    "hyper-agent-task",
+    'docker_obsidian_list_files_in_dir',
+    'docker_obsidian_list_files_in_vault',
+    'docker_obsidian_get_file_contents',
+    'docker_obsidian_simple_search',
+    'docker_obsidian_patch_content',
+    'docker_obsidian_append_content',
+    'docker_obsidian_delete_file',
+    'docker_get_current_time',
+    'docker_convert_time',
+    'docker_add_observations',
+'docker_delete_entities',
+'docker_delete_observations',
+'docker_delete_relations',
+'docker_read_graph',
+'docker_search_nodes',
+'docker_open_nodes',
+'docker_create_relations',
+'docker_create_entities',
+'docker_start-chrome',
+'docker_curl',
+'docker_curl-manual',
+'docker_interact-with-chrome',
   ],
+  responseValidation: undefined,             // or your hook config
+  tools: undefined,                          // only if you want to override tool list
+  voiceConfig: {
+    provider: VoiceProvider.GOOGLE,
+    apiKey: process.env.GOOGLE_API_KEY,
+    speaker: "en-US-Wavenet-D",
+    options: {},
+  } as VoiceConfig,
 };
 
-export type MasterAgentConfig = typeof masterAgentConfig;
+// Validate masterAgentConfig against the schema
+try {
+  MasterAgentConfigSchema.parse(masterAgentConfig);
+  console.log("Master agent config validated successfully."); // Optional success log
+} catch (error) {
+  console.error("Master agent config validation failed:", error);
+  // Decide if you want to throw the error or handle it
+  // throw error;
+}

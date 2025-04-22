@@ -28,6 +28,87 @@
 "summarization-eval",
 
 
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_fetch" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_add_issue_comment" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_create_branch" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_create_issue" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_create_or_update_file" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_create_pull_request" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_create_pull_request_review" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_create_repository" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_fork_repository" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_get_code_scanning_alert" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_get_file_contents" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_get_issue" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_get_issue_comments" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_get_me" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_get_pull_request" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_get_pull_request_comments" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_get_pull_request_files" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_get_pull_request_reviews" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.789 -0400] (tool-initialization): Tool "docker_get_pull_request_status" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_list_code_scanning_alerts" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_list_commits" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_list_issues" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_list_pull_requests" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_merge_pull_request" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_push_files" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_search_code" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_search_issues" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_search_repositories" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_search_users" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_update_issue" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_update_pull_request_branch" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_list-endpoints" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_get-endpoint" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_get-request-body" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_get-response-schema" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_get-path-parameters" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_list-components" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_get-component" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_list-security-schemes" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_get-examples" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.790 -0400] (tool-initialization): Tool "docker_search-schema" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_puppeteer_navigate" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_puppeteer_screenshot" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_puppeteer_click" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_puppeteer_fill" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_puppeteer_select" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_puppeteer_hover" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_puppeteer_evaluate" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_tool-registration" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_create_entities" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_create_relations" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_add_observations" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_delete_entities" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_delete_observations" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_delete_relations" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_read_graph" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_search_nodes" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_open_nodes" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_get_current_time" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_convert_time" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_interact-with-chrome" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_curl-manual" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_curl" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_start-chrome" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.791 -0400] (tool-initialization): Tool "docker_get_transcript" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_docker" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_obsidian_list_files_in_dir" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_obsidian_list_files_in_vault" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_obsidian_get_file_contents" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_obsidian_simple_search" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_obsidian_patch_content" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_obsidian_append_content" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_obsidian_delete_file" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_obsidian_complex_search" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_obsidian_batch_get_file_contents" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_obsidian_get_periodic_note" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_obsidian_get_recent_periodic_notes" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_obsidian_get_recent_changes" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_brave_web_search" is missing a valid Zod outputSchema (after potential patching).
+WARN [2025-04-22 16:20:51.792 -0400] (tool-initialization): Tool "docker_brave_local_search" is missing a valid Zod outputSchema (after potential patching).
+
 
 ## working but careful one breakage when used in agents & checking traces
 

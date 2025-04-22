@@ -7,7 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [v0.0.17] - 2025-04-22
+## [Unreleased] - 2025-04-22
+
+### Notes
+
+## [v0.1.7] - 2025-04-22
+
+### Added
+
+- **Voice Integration**
+  - config.types.ts: import `VoiceConfig` & `VoiceProvider` from `src/mastra/voice/index.ts`, re‑export `VoiceProvider`, extend `BaseAgentConfig` with optional `voiceConfig`.
+  - base.agent.ts: detect `config.voiceConfig`, invoke `createVoice(cfg)`, inject `MastraVoice` into the `Agent` constructor, and log voice setup.
+  - master.config.ts: include a `voiceConfig` block with `provider: VoiceProvider.GOOGLE`, `apiKey`, `speaker`, and `options`.
+- **Docker Tools**
+  - Implemented and registered all `docker_*` tools:
+    - docker_get_current_time
+    - docker_convert_time
+    - docker_add_observations
+    - docker_delete_entities
+    - docker_delete_observations
+    - docker_delete_relations
+    - docker_read_graph
+    - docker_search_nodes
+    - docker_open_nodes
+    - docker_create_relations
+    - docker_create_entities
+    - docker_start-chrome
+    - docker_curl
+    - docker_curl-manual
+    - docker_interact-with-chrome
+
+### Fixed
+
+- Changed `config.types.ts` import from `import type { VoiceProvider }` to `import { VoiceProvider }` so the enum is available at runtime.
+- Aligned `BaseAgentConfig.voiceConfig` type with the `VoiceConfig` interface expected by `createVoice()`.
+
+---
+
+## [v0.1.6] - 2025-04-22
 
 ### Added
 
@@ -45,7 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [v0.0.16] - 2025-04-22
+## [v0.1.5] - 2025-04-22
 
 ### Added
 
@@ -67,46 +104,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [v0.0.15] - 2025-04-20
+## [v0.1.4] - 2025-04-20
 
 ### Added
 
 - **Puppeteer Tool (`puppeteerTool.ts`)** Needs fixed causes stream to crash.
 Trace
 Trace Id
-Started	Total Duration
+Started Total Duration
 
 stream
-b1052f4e30ebab490748d50db729b901	4/20/2025, 9:51:12 AM	15.861ms
+b1052f4e30ebab490748d50db729b901 4/20/2025, 9:51:12 AM 15.861ms
 
 stream
-8642fc5243ae5610e419a4431b792779	4/20/2025, 9:49:01 AM	1924.593ms
+8642fc5243ae5610e419a4431b792779 4/20/2025, 9:49:01 AM 1924.593ms
 
 __registerMastra
-9337ac666c23e33bd1f6b85d98daf44a	4/20/2025, 9:48:45 AM	0.007ms
+9337ac666c23e33bd1f6b85d98daf44a 4/20/2025, 9:48:45 AM 0.007ms
 
 __registerMastra
-e85fb9fff96413107517aac82da2e943	4/20/2025, 9:48:45 AM	0.005ms
+e85fb9fff96413107517aac82da2e943 4/20/2025, 9:48:45 AM 0.005ms
 
 __registerMastra
-e39c38bd34ca5e5cbc47a2d6a32cd057	4/20/2025, 9:48:45 AM	0.005ms
+e39c38bd34ca5e5cbc47a2d6a32cd057 4/20/2025, 9:48:45 AM 0.005ms
 
 __registerMastra
-1fc4f91de6d279050eca05ef2f5d598e	4/20/2025, 9:48:45 AM	0.051ms
+1fc4f91de6d279050eca05ef2f5d598e 4/20/2025, 9:48:45 AM 0.051ms
 
 __registerPrimitives
-93250cfc44aaf1d882d180aa4fe39b13	4/20/2025, 9:48:45 AM	0.096ms
+93250cfc44aaf1d882d180aa4fe39b13 4/20/2025, 9:48:45 AM 0.096ms
 
 __registerMastra
-2744379f4f8e815785ebaddaa4830add	4/20/2025, 9:48:45 AM	0.391ms
+2744379f4f8e815785ebaddaa4830add 4/20/2025, 9:48:45 AM 0.391ms
 
 __registerPrimitives
-629c2ccf8f2b4bc80f8867c4ef9ef0de	4/20/2025, 9:48:45 AM	0.168ms
+629c2ccf8f2b4bc80f8867c4ef9ef0de 4/20/2025, 9:48:45 AM 0.168ms
 
-  - Implemented a new Mastra tool (`puppeteer_web_automator`) for advanced browser automation using Puppeteer.
-  - Supports navigating to URLs, executing a sequence of actions (click, type, scrape, wait, scroll, hover, select, evaluate), taking screenshots, and extracting data.
-  - Includes robust action schemas defined with Zod for type safety and validation.
-  - Provides detailed logging for each step of the automation process.
+- Implemented a new Mastra tool (`puppeteer_web_automator`) for advanced browser automation using Puppeteer.
+- Supports navigating to URLs, executing a sequence of actions (click, type, scrape, wait, scroll, hover, select, evaluate), taking screenshots, and extracting data.
+- Includes robust action schemas defined with Zod for type safety and validation.
+- Provides detailed logging for each step of the automation process.
 - **Knowledge Base Integration (`puppeteerTool.ts`)**
   - Integrated `writeKnowledgeFileTool` (from `readwrite.ts`) into `puppeteerTool`.
   - Added input options (`saveKnowledgeFilename`, `saveFormat`, `saveMode`, `saveEncoding`) to allow users to optionally save scraped data directly to the knowledge base.
@@ -122,7 +159,7 @@ __registerPrimitives
 
 ---
 
-## [v0.0.14] - 2025-04-19
+## [v0.1.3] - 2025-04-19
 
 ### Added
 
@@ -157,7 +194,7 @@ const { text } = await copywriterAgent.generate(writingResult);
 
 ---
 
-## [v0.0.13] - 2025-04-19
+## [v0.1.2] - 2025-04-19
 
 ### Added
 
@@ -206,7 +243,7 @@ const { text } = await copywriterAgent.generate(writingResult);
 
 ---
 
-## [v0.0.12] - 2025-04-19
+## [v0.1.1] - 2025-04-19
 
 ### Added
 
@@ -250,41 +287,7 @@ const { text } = await copywriterAgent.generate(writingResult);
 ### Fixed
 
 - Ensured all tools have explicit output schemas and are patched at registration, preventing runtime errors in Mastra workflows.
-- Fixed tool discovery and registration issues for new tools (arxiv, polygon, reddit) by updating the barrel file and tool initialization logic.
-
-### Notes
-
-- All new and updated tools follow the Mastra pattern: explicit Zod schemas, output schema patching, and unified exports.
-- Agents now reliably resolve and use all registered tools, with clear error messages if a tool is missing.
-- Next steps: Continue to lint and type-check after every file edit, and document any new tool or agent patterns in this changelog for future maintainers.
-
----
-
-## [v0.0.11] - 2025-04-19 12:00 UTC
-
-### Added
-
-- **fileLogger.ts**  
-  • Switched to `fs‑extra` (`ensureDirSync`/`ensureFileSync`) so `logs/mastra.log` is created automatically.  
-  • Retains full JSON‑line format and log levels.
-
-- **upstashLog.ts**  
-  • Exposed `createUpstashLogger()` factory and `upstashLogger` default instance.  
-  • Normalizes the Redis REST URL with `https://` to satisfy `new URL()`.  
-  • Re‑exports `UpstashTransport` for advanced use.
-
-- **consoleLogger.ts**  
-  • Simple in‑process console transport with `debug`/`info`/`warn`/`error` and timestamped prefixes.
-
-- **tracing.ts & signoz.ts**  
-  • `initializeDefaultTracing()` auto‑instruments Node + graceful shutdown.  
-  • `initSigNoz()` configures OTLP exporter, tracer + meter, periodic metric reader.
-
-- **base.agent.ts**  
-  • Imported and wired:
-    - `consoleLogger`, `upstashLogger`, `fileLogger` under a unified `logger` API.  
-    - OpenTelemetry via `initializeDefaultTracing()`.  
-    - SigNoz tracer + meter via `initSigNoz()`.  
+  - SigNoz tracer + meter via `initSigNoz()`.  
   • Created spans around agent lifecycle (`agent.create`, `agent.debug/info/warn/error`).  
   • Recorded metrics (`agent.creation.count`, `agent.creation.latency_ms`).  
   • **Voice integration is stubbed**—the `createGoogleVoice()` import and `voice` prop in the `Agent` constructor are commented out because real‑time streaming (connect, listen, speaker events) is not yet implemented.  
@@ -308,7 +311,7 @@ const { text } = await copywriterAgent.generate(writingResult);
   3. Pass the active `voice` instance into the `Agent` constructor.  
   4. Un‑comment the `voice` lines and verify end‑to‑end audio streaming.
 
-## [v0.0.10] - 2025-04-16
+## [v0.1.0] - 2025-04-16
 
 ### Added
 
@@ -376,7 +379,7 @@ const { text } = await copywriterAgent.generate(writingResult);
 - Ensured all lint/type errors are fixed after every file edit.  
 - Updated README and documentation to reflect new memory, RAG, and workflow patterns.  
 - Added csv-reader, docx-reader, tools  
- 
+
 - Date: 2025-04-15  
 - Time: 15:00 UTC
 
@@ -403,7 +406,7 @@ const { text } = await copywriterAgent.generate(writingResult);
   - cheerio: For parsing HTML content (from files or web pages).
   - node-fetch: For reliably fetching documents from URLs.
 - Implementation: These packages should be utilized within a new Mastra AI Tool (e.g., readDocumentContent). This tool will inspect the input file path or URL, determine the likely document type (based on extension or potentially content-type for URLs), and invoke the appropriate parsing library to return the extracted text content for further processing by the agent.
-- 
+-
 
 ## [v0.0.5] - 2025-04-15
 

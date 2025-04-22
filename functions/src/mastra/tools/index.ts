@@ -57,7 +57,6 @@ import { searchDocumentsTool, embedDocumentTool, docxReaderTool, csvReaderTool, 
 
 // --- Extra Tools (Import Helper Functions & Direct Tools) ---
 
-import { createLlamaIndexTools } from "./llamaindex";
 import { createMastraArxivTools } from "./arxiv"; // Import Mastra helper
 import { createMastraWikipediaTools } from "./wikibase"; // Import Mastra helper
 import { createMastraAISDKTools } from "./ai-sdk"; // Import Mastra helper
@@ -88,6 +87,7 @@ import { tracingTools } from "./tracingTools";
 import { createMastraPolygonTools, TickerDetailsSchema } from "./polygon"; // Import Mastra helper for Polygon tools
 import { createMastraRedditTools, SubredditPostSchema } from "./reddit"; // Import Mastra helper for Reddit tools
 import { puppeteerTool } from "./puppeteerTool"; 
+import { hyperAgentTool } from "./hyper-functionCalls";
 
 // === Export all tool modules (Consider if all are needed) ===
 export * from "./e2b";
@@ -99,13 +99,11 @@ export * from "./rlReward";
 export * from "./github";
 export * from "./graphRag";
 export * from "./calculator";
-export * from "./llamaindex";
 export * from "./arxiv";
 export * from "./wikibase";
 export * from "./ai-sdk";
 export * from "./contentTools";
 export * from "./document-tools";
-export * from "./llmchain";
 export * from "./brave-search";
 export * from "./google-search";
 export * from "./tavily";
@@ -315,6 +313,7 @@ const coreTools: Tool<any, any>[] = [
   mkdirTool,
   copyTool,
   moveTool,
+  hyperAgentTool,
   //pdfReaderTool, 
   docxReaderTool, 
   csvReaderTool,
@@ -352,8 +351,6 @@ const additionalTools: Tool<any, any>[] = [
 ];
 
 // === Extra Tools Initialization ===
-
-// Array to hold all extra tools
 const extraTools: Tool<any, any>[] = [];
 
 // --- E2B Tools (using Mastra helper) ---
@@ -367,20 +364,28 @@ try {
     logger.error("Failed to initialize E2B tools:", { error });
 }
 
-// --- LlamaIndex Tools (needs schema check) ---
+// --- LlamaIndex Tools ---
+// --- Start Comment Out LlamaIndex ---
+/*
 try {
-    const llamaIndexArrayRaw = createLlamaIndexTools(); // Returns FunctionTool[]
+    const llamaIndexArrayRaw = await createLlamaIndexTools();
     if (Array.isArray(llamaIndexArrayRaw)) {
       const llamaIndexTools = llamaIndexArrayRaw.map(llamaTool => {
-          // Adapt FunctionTool to Mastra Tool structure
+          // ... (adaptation logic) ...
+          let inputSchemaInstance: z.ZodSchema | undefined = undefined;
+          if (llamaTool.metadata.parameters && llamaTool.metadata.parameters instanceof z.ZodSchema) {
+              inputSchemaInstance = llamaTool.metadata.parameters;
+          } else {
+              logger.warn(`LlamaIndex tool "${llamaTool.metadata.name}" has invalid or missing parameters schema. Defaulting to z.any().`);
+              inputSchemaInstance = z.any().describe("Input schema was missing or invalid.");
+          }
           const mastraTool: Tool<any, any> = {
               id: llamaTool.metadata.name,
               description: llamaTool.metadata.description,
-              inputSchema: llamaTool.metadata.parameters as z.ZodSchema | undefined, // Cast schema if needed
-              execute: llamaTool.call as any, // Use the 'call' method for execution
-              // outputSchema is handled by ensureToolOutputSchema
+              inputSchema: inputSchemaInstance,
+              execute: llamaTool.call as any,
           };
-          return ensureToolOutputSchema(mastraTool); // Now apply schema check
+          return ensureToolOutputSchema(mastraTool);
       });
       extraTools.push(...llamaIndexTools);
       logger.info(`Added ${llamaIndexTools.length} LlamaIndex tools.`);
@@ -390,6 +395,8 @@ try {
 } catch (error) {
     logger.error("Failed to initialize LlamaIndex tools:", { error });
 }
+*/
+// --- End Comment Out LlamaIndex ---
 
 // --- MCP Tools (using Mastra helper, async initialization) ---
 try {
@@ -437,15 +444,6 @@ try {
   logger.error("Failed to initialize Wikipedia tools:", { error });
 }
 
-// --- Calculator Tool (needs schema check) ---
-//try {
-//    const calculatorToolInstance = createCalculatorTool();
-//    extraTools.push(ensureToolOutputSchema(calculatorToolInstance)); // Schema check needed
-//    logger.info("Added Calculator tool.");
-//} catch (error) {
-//    logger.error("Failed to initialize Calculator tool:", { error });
-//}
-
 // --- GraphRag Tools (Mastra core tools, need schema check) ---
 try {
     // Add the main GraphRag tools if they are valid Tool objects
@@ -490,16 +488,34 @@ try {
     logger.error("Failed to initialize Reddit tools:", { error });
 }
 
-// --- LLM Chain Tools (using Mastra helper) ---
-//try {
-//    const llmChainToolsObject = createMastraLLMChainTools(); // Use the helper from llmchain.ts
-//    const llmChainToolsArray = Object.values(llmChainToolsObject); // Get tool values
-//    // Cast to Tool<any, any> to resolve potential type mismatches from different internal definitions
-//    extraTools.push(...llmChainToolsArray.map(tool => tool as Tool<any, any>));
-//    logger.info(`Added ${llmChainToolsArray.length} LLM Chain tools.`);
-//} catch (error) {
-//    logger.error("Failed to initialize LLM Chain tools:", { error });
-//}
+// --- LLM Chain Tools ---
+// --- Start Comment Out LLM Chain ---
+/*
+try {
+    const llmChainToolsObject = createMastraLLMChainTools();
+    const llmChainToolsArray = Object.values(llmChainToolsObject);
+
+    const processedLLMTools = llmChainToolsArray.map(tool => {
+        let validatedTool = { ...tool } as Tool<any, any>;
+        // ... (explicit schema assignment logic) ...
+         if (validatedTool.id === 'llm-chain') {
+            // ... schema checks ...
+        } else if (validatedTool.id === 'ai-sdk-prompt') {
+            // ... schema checks ...
+        } else {
+            // ... warning and schema check ...
+        }
+        // ... final validation and return null if invalid ...
+        return validatedTool;
+    }).filter((tool): tool is Tool<any, any> => tool !== null);
+
+    extraTools.push(...processedLLMTools);
+    logger.info(`Added ${processedLLMTools.length} LLM Chain tools.`);
+} catch (error) {
+    logger.error("Failed to initialize LLM Chain tools:", { error });
+}
+*/
+// --- End Comment Out LLM Chain ---
 
 // --- GitHub Tools (using Mastra helper) ---
 try {
@@ -529,15 +545,48 @@ const optionalTools: Tool<any, any>[] = Object.values(
 
 // === Aggregate All Tools ===
 
-/**
- * Complete collection of all available tools (core + optional + additional + extra).
- */
-export const allTools: readonly Tool<any, any>[] =
-  Object.freeze([
+// --- Start Debug Logging ---
+const combinedToolsForDebug = [
     ...coreTools,
     ...optionalTools,
     ...additionalTools,
     ...extraTools,
+];
+
+logger.info(`Checking ${combinedToolsForDebug.length} tools before final aggregation...`);
+combinedToolsForDebug.forEach((tool, index) => {
+    if (!tool || typeof tool !== 'object') {
+        logger.error(`Tool at index ${index} is invalid (undefined or not an object).`);
+        return;
+    }
+    const toolId = tool.id || `(missing id at index ${index})`;
+    if (!tool.inputSchema || !(tool.inputSchema instanceof z.ZodSchema)) {
+        logger.error(`Tool "${toolId}" is missing a valid Zod inputSchema.`);
+    }
+    if (!tool.outputSchema || !(tool.outputSchema instanceof z.ZodSchema)) {
+        // This should be less common due to ensureToolOutputSchema, but check anyway
+        logger.warn(`Tool "${toolId}" is missing a valid Zod outputSchema (after potential patching).`);
+    }
+    if (typeof tool.execute !== 'function') {
+        logger.error(`Tool "${toolId}" is missing an execute function.`);
+    }
+    // Optional: Log the schema structure itself for more detail, but can be verbose
+    // try {
+    //     logger.debug(`Tool "${toolId}" input schema structure:`, JSON.stringify(tool.inputSchema?.toJSON(), null, 2));
+    // } catch (e) {
+    //     logger.error(`Tool "${toolId}" input schema could not be stringified:`, e);
+    // }
+});
+logger.info(`Finished checking tools.`);
+// --- End Debug Logging ---
+
+
+/**
+ * Complete collection of all available tools (core + optional + additional + extra).
+ */
+export const allTools: readonly Tool<any, any>[] =
+  Object.freeze([ // Use the combined array directly
+    ...combinedToolsForDebug
   ]);
 
 /**
@@ -546,7 +595,17 @@ export const allTools: readonly Tool<any, any>[] =
 export const allToolsMap: ReadonlyMap<
   string,
   Tool<any, any>
-> = new Map(allTools.map((tool) => [tool.id, tool]));
+> = new Map(
+    allTools
+      .filter((tool): tool is Tool<any, any> & { id: string } => { // Filter out invalid tools first
+        if (!tool || !tool.id) {
+          logger.error("Attempting to map an invalid tool without an ID.");
+          return false;
+        }
+        return true;
+      })
+      .map((tool) => [tool.id, tool] as const) // Map valid tools to [id, tool] tuples
+  );
 
 /**
  * Grouped tools by category for easier access.
@@ -579,7 +638,7 @@ logger.info(
 );
 // Add specific checks for included tools based on expected IDs from helpers
 logger.info(`GraphRag tools included: ${extraTools.some(t => t.id.startsWith('graphRag') || t.id === 'createGraphRagTool' || t.id === 'graph-rag')}`);
-logger.info(`LLMChain tools included: ${extraTools.some(t => t.id.startsWith('llm-chain_'))}`); // Assuming helper creates IDs like 'llm-chain_...'
+logger.info(`LLMChain tools included: ${extraTools.some(t => t.id === 'llm-chain' || t.id === 'ai-sdk-prompt')}`); // Updated check
 logger.info(`E2B tools included: ${extraTools.some(t => t.id.startsWith('e2b_'))}`); // Assuming helper creates IDs like 'e2b_...'
 logger.info(`Arxiv tools included: ${extraTools.some(t => t.id.startsWith('arxiv_'))}`); // Assuming helper creates IDs like 'arxiv_...'
 logger.info(`AI SDK tools included: ${extraTools.some(t => t.id.startsWith('ai-sdk_'))}`); // Assuming helper creates IDs like 'ai-sdk_...'

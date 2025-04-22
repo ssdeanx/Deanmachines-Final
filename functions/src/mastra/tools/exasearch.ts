@@ -1,6 +1,7 @@
 import { aiFunction, AIFunctionsProvider } from "@agentic/core";
 import { z } from "zod";
 import { createMastraTools } from "@agentic/mastra";
+import { createLogger } from "@mastra/core/logger";
 
 import {
   searchWeb,
@@ -9,8 +10,11 @@ import {
   type ExaSearchResult,
   type ExaSearchConfig as ExaConfig
 } from "../services/exasearch";
+
 // Export types for consumers
 export type { ExaConfig as ExaSearchConfig, ExaSearchResult as ExaSearchResult };
+const logger = createLogger({ name: "exa", level: "info" });
+
 
 const ExaSearchInputSchema = z.object({
   query: z.string().describe("The search query to execute"),
@@ -26,7 +30,7 @@ const ExaSearchInputSchema = z.object({
   useRAG: z.boolean().optional().default(false),
 });
 
-const ExaSearchOutputSchema = z.object({
+export const ExaSearchOutputSchema = z.object({
   results: z.array(
     z.object({
       title: z.string(),
@@ -56,11 +60,6 @@ export class ExaSearchProvider extends AIFunctionsProvider {
   constructor(config?: { apiKey?: string }) {
     super();
     this.apiKey = config?.apiKey;
-    // Note: The actual use of the apiKey needs to happen within the search methods,
-    // potentially by passing it to the underlying service functions (searchWeb, etc.)
-    // or by configuring an Exa client instance here.
-    // This example assumes the service functions are adapted to receive the key
-    // or that a shared configuration mechanism exists.
   }
 
   /**
@@ -73,7 +72,6 @@ export class ExaSearchProvider extends AIFunctionsProvider {
     description:
       "Performs web searches using Exa search API with various filtering options",
     inputSchema: ExaSearchInputSchema,
-    // outputSchema removed, patch after createMastraTools
   })
   async search(
     input: ExaSearchInput
@@ -86,7 +84,6 @@ export class ExaSearchProvider extends AIFunctionsProvider {
     try {
       let results: ExaSearchResult[];
       if (input.useRAG) {
-        // searchForRAG returns a string, so wrap in a result object
         const ragText = await searchForRAG(input.query, serviceConfig);
         results = [{ title: "RAG Result", url: "", text: ragText }];
       } else if (input.filters) {
@@ -100,12 +97,11 @@ export class ExaSearchProvider extends AIFunctionsProvider {
       }
       return { results };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error during search";
+      logger.error(`[ExaSearch] Error in search: ${errorMessage}`, error);
       return {
         results: [],
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unknown error during search",
+        error: errorMessage,
       };
     }
   }
@@ -119,7 +115,6 @@ export class ExaSearchProvider extends AIFunctionsProvider {
  * @returns {ExaSearchProvider} An instance of ExaSearchProvider.
  */
 export function createExaSearchProvider(config?: { apiKey?: string }): ExaSearchProvider {
-  // Pass the config (containing the apiKey) to the provider's constructor.
   return new ExaSearchProvider(config);
 }
 
@@ -127,16 +122,26 @@ export function createExaSearchProvider(config?: { apiKey?: string }): ExaSearch
  * Helper function to create Mastra-compatible Exa search tools.
  *
  * This function creates an Exa search provider and wraps it with `createMastraTools`
- * to ensure compatibility with the Mastra framework.
+ * to ensure compatibility with the Mastra framework, then patches the output schema.
  *
  * @returns {ReturnType<typeof createMastraTools>} An array of Mastra-compatible tools
  */
 export function createMastraExaSearchTools(config?: { apiKey?: string }) {
+  logger.info("[ExaSearch] Creating Mastra Exa search tools...");
   const exaSearchProvider = createExaSearchProvider(config);
   const mastraTools = createMastraTools(exaSearchProvider);
-  if (mastraTools.exa_search) {
-    (mastraTools.exa_search as any).outputSchema = ExaSearchOutputSchema;
+  logger.debug("[ExaSearch] Tools created by createMastraTools:", Object.keys(mastraTools));
+
+  const toolToPatch = mastraTools?.exa_search;
+
+  if (toolToPatch) {
+    logger.info("[ExaSearch] Found 'exa_search' tool. Patching outputSchema...");
+    (toolToPatch as any).outputSchema = ExaSearchOutputSchema;
+    logger.debug("[ExaSearch] 'exa_search' outputSchema patched successfully.");
+  } else {
+    logger.warn("[ExaSearch] Could not find 'exa_search' tool in the object returned by createMastraTools. Output schema not patched.");
   }
+
   return mastraTools;
 }
 

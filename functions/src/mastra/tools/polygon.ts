@@ -138,6 +138,19 @@ export const CryptoTickersSchema = z.object({
 });
 
 /**
+ * Output schema for Polygon crypto price (most recent daily close).
+ */
+export const CryptoPriceSchema = z.object({
+  symbol: z.string().describe("The crypto pair symbol (e.g., BTC-USD)"),
+  price: z.number().describe("The most recent closing price"),
+  volume: z.number().describe("The volume for the day of the closing price"),
+  timestamp: z.number().describe("The Unix timestamp (ms) of the closing price bar"),
+}).or(z.object({ // Add schema for the error case
+  error: z.literal(true),
+  message: z.string(),
+}));
+
+/**
  * Output schema for Polygon crypto snapshot (all tickers).
  * @deprecated The underlying client does not support this endpoint.
  */
@@ -491,6 +504,10 @@ export function createMastraPolygonTools(config: { apiKey?: string } = {}) {
   }
   if (mastraTools.cryptoAggregates) {
     (mastraTools.cryptoAggregates as any).outputSchema = CryptoAggregatesSchema;
+  }
+  // Add the output schema for cryptoPrice
+  if (mastraTools.cryptoPrice) {
+    (mastraTools.cryptoPrice as any).outputSchema = CryptoPriceSchema;
   }
   // Note: cryptoPrice does not have a dedicated schema defined above,
   // but its return type is implicitly defined in the method.

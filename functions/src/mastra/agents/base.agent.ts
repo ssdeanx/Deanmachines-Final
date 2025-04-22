@@ -2,15 +2,17 @@
  * Base Agent Implementation
  *
  * This module provides utility functions to create agents from configurations,
- * ensuring consistent agent creation patterns across the application.
+ * ensuring consistent agent creation patterns across the application,
+ * including optional voice capabilities.
  */
 
 import { Agent } from "@mastra/core/agent";
 import { Tool } from "@mastra/core/tools";
 import { createLogger } from "@mastra/core/logger";
+import { MastraVoice } from "@mastra/core/voice"; // Import MastraVoice type
 import { sharedMemory } from "../database";
 import {
-  BaseAgentConfig,
+  BaseAgentConfig, // Make sure this reflects the updated interface
   defaultErrorHandler,
   DEFAULT_MODEL_ID,
   DEFAULT_MAX_TOKENS,
@@ -24,6 +26,7 @@ import { allToolsMap } from "../tools";
 import { threadManager } from "../utils/thread-manager";
 import * as MastraTypes from "../types";
 import { AgentConfigError } from "../types";
+import { createVoice } from '../voice'; // Import the voice factory function
 
 // Configure logger for agent initialization
 const logger = createLogger({ name: "agent-initialization", level: "info" });
@@ -32,18 +35,11 @@ const logger = createLogger({ name: "agent-initialization", level: "info" });
  * Creates an agent instance from a configuration object and options
  *
  * @param params - Object containing configuration and agent options
- * @param params.config - The agent configuration object
- * @param params.memory - The memory instance to be injected into the agent (following RULE-MemoryInjection)
+ * @param params.config - The agent configuration object, potentially including voiceConfig
+ * @param params.memory - The memory instance to be injected into the agent
  * @param params.onError - Optional error handler callback function
  * @returns A configured Agent instance
- * @throws AgentConfigError if required tools are not available or config is invalid
- *
- * @example
- * const agent = createAgentFromConfig({
- *   config: myAgentConfig,
- *   memory: sharedMemory,
- *   onError: async (err) => ({ text: err.message })
- * });
+ * @throws AgentConfigError if config is invalid, required tools are missing, or voice init fails
  */
 export function createAgentFromConfig({
   config,
@@ -68,50 +64,72 @@ export function createAgentFromConfig({
   for (const toolId of config.toolIds) {
     const tool = allToolsMap.get(toolId);
     if (tool) {
-      const key = tool.id || toolId;
-      tools[key] = tool;
+      // use the toolId directly as the lookup key
+      tools[toolId] = tool;
     } else {
       missingTools.push(toolId);
     }
   }
 
-  // Log and throw error for missing tools
   if (missingTools.length > 0) {
-    const errorMsg = `Missing required tools for agent ${
-      config.id
-    }: ${missingTools.join(", ")}`;
+    const errorMsg = `Missing required tools for agent ${config.id}: ${missingTools.join(", ")}`;
     logger.error(errorMsg);
-    throw new Error(errorMsg);
+    throw new AgentConfigError(errorMsg);
   }
 
   // Create response hook if validation options are provided
   const responseHook = config.responseValidation
     ? createResponseHook(config.responseValidation)
     : undefined;
-  // Create and return the agent instance
+
+  // Log agent creation details
   logger.info(
-    `Creating agent: ${config.id} with ${Object.keys(tools).length} tools`
+    `Creating agent: ${config.id} ('${config.name}') with ${Object.keys(tools).length} tools.`
   );
+  if (config.voiceConfig) {
+    logger.info(` -> Including voice configuration: ${config.voiceConfig.provider}`);
+  }
+
   try {
-    // Create model instance using the new modelConfig property
+    // Create model instance
     const model = createModelInstance(config.modelConfig);
 
+    // --- Create Voice Instance (if configured) ---
+    let voiceInstance: MastraVoice | undefined = undefined;
+    if (config.voiceConfig) {
+      try {
+        // Use the factory from voice/index.ts
+        voiceInstance = createVoice(config.voiceConfig);
+        logger.info(` -> Voice provider '${config.voiceConfig.provider}' created successfully for agent ${config.id}.`);
+        // Note: The createGoogleVoice (and potentially others) function already
+        // adds tools and instructions to the voice instance itself.
+      } catch (voiceError) {
+        const errorMsg = `Failed to create voice provider for agent ${config.id}: ${voiceError instanceof Error ? voiceError.message : String(voiceError)}`;
+        logger.error(errorMsg, voiceError);
+        // Decide whether to throw or continue without voice. Throwing is safer.
+        throw new AgentConfigError(errorMsg);
+      }
+    }
+    // --- End Voice Instance Creation ---
+
+    // Create and return the agent instance
     return new Agent({
       model,
-      memory, // Using injected memory instead of global reference
+      memory,
       name: config.name,
       instructions: config.instructions,
       tools,
+      ...(voiceInstance ? { voice: voiceInstance } : {}), // Conditionally add voice instance
       ...(responseHook ? { onResponse: responseHook } : {}),
-      ...(onError ? { onError } : {}), // Add error handler if provided
+      ...(onError ? { onError } : {}),
     });
   } catch (error) {
-    logger.error(
-      `Failed to create agent ${config.id}: ${
-        error instanceof Error ? error.message : String(error)
-      }`
-    );
-    throw error;
+    // Catch errors during Agent instantiation as well
+    const errorMsg = `Failed to create agent ${config.id}: ${error instanceof Error ? error.message : String(error)}`;
+    logger.error(errorMsg, error);
+    // Ensure the original error type is preserved if possible, or wrap if needed
+    if (error instanceof AgentConfigError) throw error;
+    throw new AgentConfigError(errorMsg);
   }
 }
 

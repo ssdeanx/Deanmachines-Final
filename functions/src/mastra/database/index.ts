@@ -60,12 +60,14 @@ export function createMemory(
   const storage = new LibSQLStore({
     config: {
       url: process.env.DATABASE_URL || "file:.mastra/mastra.db",
+      authToken: process.env.DATABASE_KEY, // Add DATABASE_KEY here
     },
   });
 
   // Initialize LibSQL vector store for semantic search
   const vector = new LibSQLVector({
     connectionUrl: process.env.DATABASE_URL || "file:.mastra/mastra.db",
+    authToken: process.env.DATABASE_KEY, // Add DATABASE_KEY here
   });
 
   return new Memory({

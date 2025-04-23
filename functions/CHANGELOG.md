@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Wrapped each tool’s `execute()` to log inputs (`logger.info`) and errors (`logger.error`), then re‑throw.
   - Logged the total number of MCP tools added:
     ```bash
-    INFO (mcp-tools): [MCP] Added 111 MCP tools.
+    INFO (mcp-tools): [MCP] Added 114 MCP tools.
     ```
 
 - **Extra MCP Server Definitions**

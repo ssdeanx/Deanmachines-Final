@@ -2,20 +2,41 @@
 
 All notable changes to the DeanMachines Mastra Backend will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [Unreleased] - 2025-04-22
+## [0.1.8] - 2025-04-22 20:15 -0400
 
 ### Added
-- **MCP Tool Logging & Error Handling**
-  - Wrapped each `execute()` call in `src/mastra/tools/mcptool.ts` with:
-    - `logger.info` before execution to record the tool name and input.
-    - `logger.error` around execution failures to log command errors and re‑throw.
 
-### Notes
+- **MCP Tool Server Configuration & Environment**
+  - mcptool.ts: removed hard‑coded keys; now reads `SMITHERY_API_KEY` from `process.env`, validates its presence, and injects it into every MCP server definition.
+  - tools/index.ts: added `SMITHERY_API_KEY` to the Zod `envSchema` for environment validatio
+
+- **MCP Tool Schema Patching & Execution Wrapping**
+  - mcptool.ts: merged default servers with any user‑provided `config.servers`.
+  - Fetched raw tools via `mcp.getTools()`, validated `inputSchema` (must be `z.ZodType`), and patched missing/invalid `outputSchema` to `z.unknown()`.
+  - Wrapped each tool’s `execute()` to log inputs (`logger.info`) and errors (`logger.error`), then re‑throw.
+  - Logged the total number of MCP tools added:
+
+    ```bash
+    INFO (mcptools): [MCP] Added 111 MCP tools.
+    ```
+
+### Changed
+
+- Switched `config.types.ts` imports to real (non‑type‑only) so `VoiceProvider` enum is available at runtime.
+- Unified `VoiceConfig`/`VoiceProvider` definitions between `src/mastra/agents/config/config.types.ts` and `src/mastra/voice/index.ts`.
+
+### Fixed
+
+- Aligned `BaseAgentConfig.voiceConfig` type with the `VoiceConfig` interface expected by `createVoice()`.
+- Resolved TS error `'VoiceProvider' cannot be used as a value because it was imported using 'import type'`.
+- Reinforced correct merge of default and custom MCP server definitions in `createMastraMcpTools`.
+
+---
 
 ## [v0.1.7] - 2025-04-22
 
@@ -412,7 +433,7 @@ const { text } = await copywriterAgent.generate(writingResult);
   - cheerio: For parsing HTML content (from files or web pages).
   - node-fetch: For reliably fetching documents from URLs.
 - Implementation: These packages should be utilized within a new Mastra AI Tool (e.g., readDocumentContent). This tool will inspect the input file path or URL, determine the likely document type (based on extension or potentially content-type for URLs), and invoke the appropriate parsing library to return the extracted text content for further processing by the agent.
--
+-  
 
 ## [v0.0.5] - 2025-04-15
 

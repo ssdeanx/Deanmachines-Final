@@ -15,7 +15,7 @@ https://smith.langchain.com/hub/deanmachines-ai/react
 // If you are in a non-Node environment, please use the default "langchain/hub" entrypoint and omit includeModel for providers other than Google Generative AI. Aka Gemini.
 import * as hub from "langchain/hub/node";
 
-await hub.pull("deanmachines-ai/prompt-maker", {
+await hub.pull("deanmachines-ai/prompt-maker", "deanmachines-ai/rag-prompt", "deanmachines-ai/chain-of-density", "deanmachines-ai/superb_system_instruction_prompt", "deanmachines-ai/model-evaluator", "deanmachines-ai/synthetic-training-data", "deanmachines-ai/react", {
   includeModel: true
 });
 ```

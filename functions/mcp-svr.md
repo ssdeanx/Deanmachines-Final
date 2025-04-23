@@ -12,7 +12,7 @@ https://smith.langchain.com/hub/deanmachines-ai/react
 ```ts
 // Set the LANGSMITH_API_KEY environment variable (create key in Settings > API Keys)
 
-// If you are in a non-Node environment, please use the default "langchain/hub" entrypoint and omit includeModel for providers other than OpenAI
+// If you are in a non-Node environment, please use the default "langchain/hub" entrypoint and omit includeModel for providers other than Google Generative AI. Aka Gemini.
 import * as hub from "langchain/hub/node";
 
 await hub.pull("deanmachines-ai/prompt-maker", {

@@ -9,6 +9,16 @@ import { LibSQLStore } from "@mastra/core/storage/libsql";
 import { LibSQLVector } from "@mastra/core/vector/libsql";
 import { Memory } from "@mastra/memory";
 import type { MastraStorage, MastraVector } from "@mastra/core";
+import { configureLangSmithTracing } from "../services/langsmith";
+import { createLogger } from "@mastra/core/logger";
+
+const logger = createLogger({ name: "database", level: "info" });
+
+// enable LangSmith tracing for database layer
+const langsmithClient = configureLangSmithTracing();
+if (langsmithClient) {
+  logger.info("LangSmith tracing enabled for database operations");
+}
 
 // Define the memory configuration type
 export interface MemoryConfig {
@@ -31,11 +41,11 @@ export interface MemoryConfig {
 
 // Default memory configuration that works well for most agents
 const defaultMemoryConfig: MemoryConfig = {
-  lastMessages: 50,
+  lastMessages: 250,
   semanticRecall: {
-    topK: 5,
+    topK: 10,
     messageRange: {
-      before: 2,
+      before: 5,
       after: 1,
     },
   },

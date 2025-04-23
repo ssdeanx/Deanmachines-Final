@@ -5,131 +5,98 @@
  * improving LLM interactions within Mastra agents.
  */
 
-import { Client as LangSmithClient } from "langsmith";
 import { env } from "process";
 import { v4 as uuidv4 } from "uuid";
+import { Client as LangSmithClient } from "langsmith";
+import { initializeDefaultTracing, getTracer, logWithTraceContext } from "./tracing";
+import { createLogger } from "@mastra/core/logger";
+import type { LangSmithConfig } from "../services/types";
 
-/**
- * Configuration options for LangSmith tracing
- */
-export interface LangSmithConfig {
-  /** API key for LangSmith access */
-  apiKey?: string;
-  /** LangSmith API endpoint URL */
-  endpoint?: string;
-  /** Project name for organizing traces */
-  projectName?: string;
-  /** Whether to enable tracing */
-  enabled?: boolean;
+const logger = createLogger({ name: "Langsmith", level: "info" });
+
+// Initialize OTEL tracing for LangSmith
+// Destructure to consume all returned values
+const { tracer: initialTracer, meterProvider, meter } = initializeDefaultTracing(
+  "langsmith-service",
+  "0.1.0"
+);
+// Prefer the OTEL tracer if present, else fall back
+const tracer = initialTracer ?? getTracer();
+
+// Log that metrics are enabled if provider exists
+if (meterProvider) {
+  logger.info("LangSmith metrics provider initialized");
 }
 
-/**
- * Global LangSmith client instance
- */
+// Create counters for runs and feedback
+const runCounter = meter?.createCounter("langsmith_runs_total", {
+  description: "Total number of LangSmith runs created",
+});
+const feedbackCounter = meter?.createCounter("langsmith_feedback_total", {
+  description: "Total number of LangSmith feedback events recorded",
+});
+
+/** Global LangSmith client */
 let langsmithClient: LangSmithClient | null = null;
 
-/**
- * Configures LangSmith tracing for the application
- *
- * @param config - Configuration options for LangSmith
- * @returns The configured LangSmith client
- * @throws If LangSmith configuration fails due to missing API key
- */
-export function configureLangSmithTracing(
-  config?: LangSmithConfig
-): LangSmithClient | null {
-  // Skip if explicitly disabled
-  if (config?.enabled === false) {
-    return null;
-  }
-
-  // Use existing client if available
-  if (langsmithClient) {
-    return langsmithClient;
-  }
+export function configureLangSmithTracing(config?: LangSmithConfig): LangSmithClient | null {
+  if (config?.enabled === false) return null;
+  if (langsmithClient) return langsmithClient;
 
   try {
     const apiKey = config?.apiKey || env.LANGSMITH_API_KEY;
     const endpoint = config?.endpoint || env.LANGSMITH_ENDPOINT;
-
     if (!apiKey) {
-      console.warn("LangSmith API key not provided, tracing disabled");
+      logWithTraceContext(logger as unknown as Record<string, (...args: any[]) => void>, "warn", "LangSmith API key not provided; tracing disabled");
       return null;
     }
 
-    // Set environment variables that LangSmith SDK relies on
-    process.env.LANGCHAIN_TRACING_V2 = env.LANGSMITH_TRACING_V2 || "true";
-    process.env.LANGCHAIN_ENDPOINT =
-      endpoint || "https://api.smith.langchain.com";
-    process.env.LANGCHAIN_API_KEY = apiKey;
-    process.env.LANGCHAIN_PROJECT = config?.projectName || "DeanmachinesAI";
+    process.env.LANGSMITH_TRACING_V2 = env.LANGSMITH_TRACING_V2 || "true";
+    process.env.LANGSMITH_ENDPOINT = endpoint || "https://api.smith.langchain.com";
+    process.env.LANGSMITH_API_KEY = apiKey;
+    process.env.LANGSMITH_PROJECT = config?.projectName || "DeanmachinesAI";
 
-    // Create LangSmith client
-    langsmithClient = new LangSmithClient({
-      apiKey,
-      apiUrl: endpoint || "https://api.smith.langchain.com",
-    });
-
-    console.log("LangSmith tracing configured successfully");
+    langsmithClient = new LangSmithClient({ apiKey, apiUrl: endpoint });
+    logWithTraceContext(logger as unknown as Record<string, (...args: any[]) => void>, "info", "LangSmith client configured");
     return langsmithClient;
-  } catch (error) {
-    console.error("Failed to configure LangSmith tracing:", error);
+  } catch (err) {
+    logWithTraceContext(logger as unknown as Record<string, (...args: any[]) => void>, "error", "Failed to configure LangSmith tracing", { error: err });
     return null;
   }
 }
 
-/**
- * Creates a new LangSmith run for tracking a specific operation
- *
- * @param name - Name of the operation to trace
- * @param tags - Optional tags for categorizing the run
- * @returns A Promise resolving to the run ID for tracking the operation, or a fallback UUID
- */
 export async function createLangSmithRun(
   name: string,
   tags?: string[]
 ): Promise<string> {
-  if (!langsmithClient) {
-    configureLangSmithTracing();
-  }
+  // increment run counter
+  runCounter?.add(1, { name });
+  const span = tracer?.startSpan("createLangSmithRun", { attributes: { name } });
+  if (!langsmithClient) configureLangSmithTracing();
 
-  if (!langsmithClient) {
-    // Fallback to generating a UUID if LangSmith is unavailable
-    return Promise.resolve(uuidv4());
-  }
-
-  // Generate a UUID locally to use as the run ID
   const runId = uuidv4();
+  if (!langsmithClient) return runId;
 
   try {
-    // Attempt to create the run in LangSmith, potentially passing the generated ID
-    // Note: createRun might return void, so we don't rely on its return value for the ID.
     await langsmithClient.createRun({
-      id: runId, // Pass the generated UUID as the run ID if supported
+      id: runId,
       name,
       run_type: "tool",
-      inputs: {}, // Add required inputs property
-      extra: {
-        tags: tags || [],
-        timestamp: new Date().toISOString(),
-      },
+      inputs: {},
+      extra: { tags: tags || [], timestamp: new Date().toISOString() },
     });
-
-    // Return the locally generated UUID
+    span?.end();
     return runId;
   } catch (error) {
-    console.error("Error creating LangSmith run:", error);
-    return uuidv4(); // Fallback UUID on error
+    span?.recordException(error as Error);
+    span?.end();
+    logWithTraceContext(logger as unknown as Record<string, (...args: any[]) => void>, "error", "Error creating LangSmith run", {
+      error,
+    });
+    return uuidv4();
   }
 }
 
-/**
- * Tracks feedback for a specific operation in LangSmith
- *
- * @param runId - The ID of the run to attach feedback to
- * @param feedback - Feedback information (rating, comment, etc.)
- * @returns Boolean indicating success or failure
- */
 export async function trackFeedback(
   runId: string,
   feedback: {
@@ -139,12 +106,12 @@ export async function trackFeedback(
     value?: any;
   }
 ): Promise<boolean> {
+  // increment feedback counter
+  feedbackCounter?.add(1, { runId, key: feedback.key ?? "accuracy" });
+  const span = tracer?.startSpan("trackFeedback", { attributes: { runId } });
+  if (!langsmithClient) configureLangSmithTracing();
   if (!langsmithClient) {
-    configureLangSmithTracing();
-  }
-
-  if (!langsmithClient) {
-    console.warn("LangSmith client not available, feedback not tracked");
+    logWithTraceContext(logger as unknown as Record<string, (...args: any[]) => void>, "warn", "LangSmith client not available, feedback not tracked");
     return false;
   }
 
@@ -155,12 +122,18 @@ export async function trackFeedback(
       comment: feedback.comment,
       value: feedback.value,
     });
+    span?.end();
     return true;
   } catch (error) {
-    console.error("Error tracking feedback in LangSmith:", error);
+    span?.recordException(error as Error);
+    span?.end();
+    logWithTraceContext(logger as unknown as Record<string, (...args: any[]) => void>, "error", "Error tracking feedback", {
+      runId,
+      error,
+    });
     return false;
   }
 }
 
-// Initialize LangSmith on module import
+// Initialize on import
 configureLangSmithTracing();

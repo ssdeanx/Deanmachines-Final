@@ -27,9 +27,16 @@ import { threadManager } from "../utils/thread-manager";
 import * as MastraTypes from "../types";
 import { AgentConfigError } from "../types";
 import { createVoice } from '../voice'; // Import the voice factory function
+import { configureLangSmithTracing } from "../services/langsmith"; // add LangSmith import
 
 // Configure logger for agent initialization
 const logger = createLogger({ name: "agent-initialization", level: "info" });
+
+// Configure LangSmith tracing once at startup
+const langsmithClient = configureLangSmithTracing();
+if (langsmithClient) {
+  logger.info("LangSmith tracing enabled for Mastra agents");
+}
 
 /**
  * Creates an agent instance from a configuration object and options
@@ -91,6 +98,10 @@ export function createAgentFromConfig({
   }
 
   try {
+    // Optionally record an agent‐creation run
+    // import createLangSmithRun above if you want to track runs
+    // await createLangSmithRun(`agent-create:${config.id}`, ["agent-init"]);
+
     // Create model instance
     const model = createModelInstance(config.modelConfig);
 

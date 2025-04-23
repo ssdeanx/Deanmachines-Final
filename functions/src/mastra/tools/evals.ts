@@ -4,8 +4,15 @@ import sigNoz from "../services/signoz";
 import { createGoogleModel } from "../agents/config/index";
 import { generateText } from "ai";
 import { createLogger } from "@mastra/core/logger";
+import { configureLangSmithTracing } from "../services/langsmith";
 
 const logger = createLogger({ name: "evals", level: "info" });
+
+// enable LangSmith tracing for eval tools
+const langsmithClient = configureLangSmithTracing();
+if (langsmithClient) {
+  logger.info("LangSmith tracing enabled for evaluation tools");
+}
 
 // Helper to get modelId from env/config or use default
 function getEvalModelId() {

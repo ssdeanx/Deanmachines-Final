@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2025-04-22
 
+### Added
+- **MCP Tool Logging & Error Handling**
+  - Wrapped each `execute()` call in `src/mastra/tools/mcptool.ts` with:
+    - `logger.info` before execution to record the tool name and input.
+    - `logger.error` around execution failures to log command errors and re‑throw.
+
 ### Notes
 
 ## [v0.1.7] - 2025-04-22

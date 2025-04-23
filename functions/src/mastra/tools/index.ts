@@ -140,6 +140,7 @@ const envSchema = z.object({
   E2B_API_KEY: z.string().min(1, "E2B API key is required"),
   GITHUB_API_KEY: z.string().min(1, "GitHub API key is required"),
   POLYGON_API_KEY: z.string().min(1, "Polygon API key is required"), // <-- Added for Polygon
+  SMITHERY_API_KEY: z.string().min(1, "Smithery API key is required"),
 });
 
 /**

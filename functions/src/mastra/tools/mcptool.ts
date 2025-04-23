@@ -78,6 +78,39 @@ export async function createMastraMcpTools(config?: {
         smitheryKey!,
       ],
     },
+    "mermaid-mcp-server": {
+      command: "npx",
+      args: [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@peng-shawn/mermaid-mcp-server",
+        "--key",
+        smitheryKey!,
+      ],
+    },
+    "deepview-mcp": {
+      command: "npx",
+      args: [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@ai-1st/deepview-mcp",
+        "--key",
+        smitheryKey!,
+      ],
+    },
+    "n8n-workflow-builder": {
+      command: "npx",
+      args: [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@Jimmy974/n8n-workflow-builder",
+        "--key",
+        smitheryKey!,
+      ],
+    },
   };
 
   const servers = config?.servers
@@ -89,7 +122,10 @@ export async function createMastraMcpTools(config?: {
   try {
     logger.info("[MCP] Fetching tools...");
     const rawTools = await mcp.getTools();
-    logger.info(`[MCP] Retrieved ${Object.keys(rawTools).length} tools.`);
+    const rawNames = Object.keys(rawTools);
+    logger.info(
+      `[MCP] Retrieved ${rawNames.length} tools: ${rawNames.join(", ")}`
+    );
 
     // Validate & patch schemas and wrap each execute()
     const tools = Object.fromEntries(

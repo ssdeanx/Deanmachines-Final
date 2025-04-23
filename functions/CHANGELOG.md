@@ -13,17 +13,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **MCP Tool Server Configuration & Environment**
   - mcptool.ts: removed hard‑coded keys; now reads `SMITHERY_API_KEY` from `process.env`, validates its presence, and injects it into every MCP server definition.
-  - tools/index.ts: added `SMITHERY_API_KEY` to the Zod `envSchema` for environment validatio
+  - tools/index.ts: added `SMITHERY_API_KEY` to the Zod `envSchema` for environment validation.
 
 - **MCP Tool Schema Patching & Execution Wrapping**
   - mcptool.ts: merged default servers with any user‑provided `config.servers`.
   - Fetched raw tools via `mcp.getTools()`, validated `inputSchema` (must be `z.ZodType`), and patched missing/invalid `outputSchema` to `z.unknown()`.
   - Wrapped each tool’s `execute()` to log inputs (`logger.info`) and errors (`logger.error`), then re‑throw.
   - Logged the total number of MCP tools added:
-
     ```bash
-    INFO (mcptools): [MCP] Added 111 MCP tools.
+    INFO (mcp-tools): [MCP] Added 111 MCP tools.
     ```
+
+- **Extra MCP Server Definitions**
+  - Added default server entries in mcptool.ts for:
+    - mcp‑pandoc (Smithery CLI)
+    - claudedesktopcommander
+    - mcp‑painter
+    - clear‑thought
+    - mermaid‑mcp‑server
+    - deepview‑mcp
+    - n8n‑workflow‑builder
+
+- **Extra MCP Tools Registered**
+  - mcp‑pandoc_convert‑contents  
+  - mcp‑painter_drawing_generateCanvas  
+  - mcp‑painter_drawing_fillRectangle  
+  - mcp‑painter_drawing_getCanvasPng  
+  - mcp‑painter_drawing_getCanvasData  
+  - claudedesktopcommander_execute_command  
+  - claudedesktopcommander_read_output  
+  - claudedesktopcommander_force_terminate  
+  - claudedesktopcommander_list_sessions  
+  - claudedesktopcommander_list_processes  
+  - claudedesktopcommander_kill_process  
+  - claudedesktopcommander_block_command  
+  - claudedesktopcommander_unblock_command  
+  - claudedesktopcommander_list_blocked_commands  
+  - claudedesktopcommander_read_file  
+  - claudedesktopcommander_read_multiple_files  
+  - claudedesktopcommander_write_file  
+  - claudedesktopcommander_create_directory  
+  - claudedesktopcommander_list_directory  
+  - claudedesktopcommander_move_file  
+  - claudedesktopcommander_search_files  
+  - claudedesktopcommander_get_file_info  
+  - claudedesktopcommander_list_allowed_directories  
+  - claudedesktopcommander_edit_block  
+  - clear‑thought_sequentialthinking  
+  - clear‑thought_mentalmodel  
+  - clear‑thought_debuggingapproach  
+  - n8n‑workflow‑builder_create_workflow  
+  - deepview‑mcp_deepview  
+  - mermaid‑mcp‑server_generate
 
 ### Changed
 

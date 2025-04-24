@@ -8,15 +8,7 @@
 import { google } from "@ai-sdk/google";
 import { AgentNetwork, type AgentNetworkConfig } from "@mastra/core/network";
 import { createResponseHook } from "../../hooks"; // Assuming this path is correct
-import {
-  researchAgent,
-  analystAgent,
-  writerAgent,
-  rlTrainerAgent,
-  dataManagerAgent,
-} from "../../agents";
-// Import the default export (agents object) for MoE configuration
-import allAgents from "../../agents";
+import agents from "../../agents"; // Central agent registry map
 import { env } from "process";
 import { DEFAULT_MODELS } from "../../agents/config"; // Import for MoE config
 import { KnowledgeWorkMoENetwork } from "./knowledgeWorkMoE.network"; // Import the MoE network class
@@ -24,6 +16,7 @@ import { sharedMemory } from "../../database"; // Import shared memory for netwo
 import { threadManager } from "../../utils/thread-manager";
 import { createLogger } from "@mastra/core/logger";
 import { configureLangSmithTracing } from "../../services/langsmith";
+import { applySharedHooks, instrumentNetwork, scheduleMemoryCompaction, renderTemplate, scheduleHealthChecks, registerNetworkHooks, fallbackNetworkInvoke } from './networkHelpers';
 
 const logger = createLogger({ name: "agentNetwork", level: "info" });
 
@@ -134,18 +127,13 @@ export const deanInsightsNetwork = new AgentNetwork({
   model: baseNetworkConfig.model!, // Ensure model is explicitly provided and non-null
   name: "DeanInsights Network",
   agents: [
-    researchAgent,
-    analystAgent,
-    writerAgent,
-    rlTrainerAgent,
-    dataManagerAgent,
+    agents.researchAgent,
+    agents.analystAgent,
+    agents.writerAgent,
+    agents.rlTrainerAgent,
+    agents.dataManagerAgent,
   ],
-  // Apply hooks directly in the configuration
-  hooks: {
-    onError: deanInsightsHooks.onError,
-    onResponse: deanInsightsHooks.onGenerateResponse,
-  },
-  instructions: `
+  instructions: renderTemplate(`
     You are a coordination system that routes queries to the appropriate specialized agents
     to deliver comprehensive and accurate insights.
 
@@ -181,9 +169,16 @@ export const deanInsightsNetwork = new AgentNetwork({
     Coordinate these capabilities effectively to deliver comprehensive results.
 
     You should maintain a neutral, objective tone and prioritize accuracy and clarity.
-  `,
-  // hooks: { ... } // Removed hooks from constructor - apply post-instantiation if needed
+  `, { agentList: [agents.researchAgent, agents.analystAgent, agents.writerAgent, agents.rlTrainerAgent, agents.dataManagerAgent].map(a => a.name).join(', ') }),
 });
+
+// Apply shared hooks, instrumentation, and memory compaction
+applySharedHooks(deanInsightsNetwork, {
+  onError: deanInsightsHooks.onError,
+  onGenerateResponse: deanInsightsHooks.onGenerateResponse,
+});
+instrumentNetwork(deanInsightsNetwork);
+scheduleMemoryCompaction(deanInsightsNetwork);
 
 /**
  * DataFlow Network
@@ -193,15 +188,10 @@ export const deanInsightsNetwork = new AgentNetwork({
 export const dataFlowNetwork = new AgentNetwork({
   // id: "data-flow", // ID is not part of AgentNetworkConfig, set via other means if necessary
   ...baseNetworkConfig, // Includes core config
-  model: baseNetworkConfig.model!, // Ensure model is explicitly provided and non-null
+  model: baseNetworkConfig.model!, // Ensure model is explicitly provided
   name: "DataFlow Network",
-  agents: [dataManagerAgent, analystAgent, rlTrainerAgent],
-  // Apply hooks directly in the configuration
-  hooks: {
-    onError: dataFlowHooks.onError,
-    onResponse: dataFlowHooks.onGenerateResponse,
-  },
-  instructions: `
+  agents: [agents.dataManagerAgent, agents.analystAgent, agents.rlTrainerAgent],
+  instructions: renderTemplate(`
     You are a data processing coordination system that orchestrates specialized agents
     to handle data operations, analysis, and optimization tasks.
 
@@ -231,9 +221,15 @@ export const dataFlowNetwork = new AgentNetwork({
     Use these capabilities in combination for optimal results.
 
     Focus on producing accurate, engaging, and valuable content that effectively communicates complex information.
-  `,
-  // hooks: { ... } // Removed hooks from constructor - apply post-instantiation if needed
+  `, { agentList: [agents.dataManagerAgent, agents.analystAgent, agents.rlTrainerAgent].map(a => a.name).join(', ') }),
 });
+
+applySharedHooks(dataFlowNetwork, {
+  onError: dataFlowHooks.onError,
+  onGenerateResponse: dataFlowHooks.onGenerateResponse,
+});
+instrumentNetwork(dataFlowNetwork);
+scheduleMemoryCompaction(dataFlowNetwork);
 
 /**
  * ContentCreation Network
@@ -244,8 +240,8 @@ export const contentCreationNetwork = new AgentNetwork({
   ...baseNetworkConfig, // Includes model and memory
   model: baseNetworkConfig.model!, // Ensure model is explicitly provided and non-null
   name: "ContentCreation Network",
-  agents: [researchAgent, writerAgent, rlTrainerAgent],
-  instructions: `
+  agents: [agents.researchAgent, agents.writerAgent, agents.rlTrainerAgent],
+  instructions: renderTemplate(`
     You are a content creation coordination system that orchestrates the process
     of researching topics and producing high-quality, well-structured content.
 
@@ -275,15 +271,21 @@ export const contentCreationNetwork = new AgentNetwork({
     Leverage these tools for comprehensive content creation.
 
     Focus on producing accurate, engaging, and valuable content that effectively communicates complex information.
-  `,
-  // hooks: { ... } // Removed hooks from constructor - apply post-instantiation if needed
+  `, { agentList: [agents.researchAgent, agents.writerAgent, agents.rlTrainerAgent].map(a => a.name).join(', ') }),
 });
+
+applySharedHooks(contentCreationNetwork, {
+  onError: contentCreationHooks.onError,
+  onGenerateResponse: contentCreationHooks.onGenerateResponse,
+});
+instrumentNetwork(contentCreationNetwork);
+scheduleMemoryCompaction(contentCreationNetwork);
 
 // --- MoE Network Instantiation (Added) ---
 
 // 1. Define the expert agent IDs for the MoE network instance
 // Explicitly type the array elements as keys of the allAgents object.
-const moeExpertIds: (keyof typeof allAgents)[] = [
+const moeExpertIds: (keyof typeof agents)[] = [
   "researchAgent",
   "analystAgent",
   "writerAgent",
@@ -301,39 +303,40 @@ const moeExpertIds: (keyof typeof allAgents)[] = [
 ];
 
 // 2. Configure the router model for the MoE network
-const moeRouterConfig = DEFAULT_MODELS.GOOGLE_STANDARD; // Use a capable model for routing
+const moeRouterConfig = DEFAULT_MODELS.GOOGLE_STANDARD // Use a capable model for routing
 
 // 3. Instantiate the MoE network with a unique ID
 export const knowledgeWorkMoENetwork = new KnowledgeWorkMoENetwork(
   moeExpertIds,
-  allAgents, // Pass the full agent registry
+  agents, // Pass the full agent registry
   moeRouterConfig,
   "knowledge-work-moe-v1" // Unique ID for this network instance
   // fallbackAgentId: 'agenticAssistant' // Default is usually fine
 );
 
-// --- Apply Hooks to Networks ---
-// NOTE: Direct assignment of hooks (e.g., network.onError) is not supported by the AgentNetwork type.
-// Consult the @mastra/core documentation for the correct method to apply hooks
-// (e.g., potentially via constructor configuration or execution options).
-// The following lines are commented out to resolve the type errors:
+// Instrument and monitor MoE network
+instrumentNetwork(knowledgeWorkMoENetwork);
+scheduleMemoryCompaction(knowledgeWorkMoENetwork);
 
-// deanInsightsNetwork.onError = deanInsightsHooks.onError;
-// deanInsightsNetwork.onGenerateResponse = deanInsightsHooks.onGenerateResponse;
+// Schedule periodic health checks
+scheduleHealthChecks(
+  [deanInsightsNetwork, dataFlowNetwork, contentCreationNetwork, knowledgeWorkMoENetwork],
+  60000
+);
 
-// dataFlowNetwork.onError = dataFlowHooks.onError;
-// dataFlowNetwork.onGenerateResponse = dataFlowHooks.onGenerateResponse; // Duplicate line removed
-
-// contentCreationNetwork.onError = contentCreationHooks.onError;
-// contentCreationNetwork.onGenerateResponse = contentCreationHooks.onGenerateResponse;
-
-// knowledgeWorkMoENetwork.onError = async (error: Error) => {
-//   console.error("MoE Network error:", error);
-//   return {
-//     text: "The MoE agent network encountered an error. Please try again with a more specific request.",
-//     error: error.message,
-//   };
-// };
+// Register fallback to MoE network on errors
+registerNetworkHooks(deanInsightsNetwork, {
+  onErrorInvoke: (err, input, opts) => fallbackNetworkInvoke([knowledgeWorkMoENetwork], input, opts),
+});
+registerNetworkHooks(dataFlowNetwork, {
+  onErrorInvoke: (err, input, opts) => fallbackNetworkInvoke([knowledgeWorkMoENetwork], input, opts),
+});
+registerNetworkHooks(contentCreationNetwork, {
+  onErrorInvoke: (err, input, opts) => fallbackNetworkInvoke([knowledgeWorkMoENetwork], input, opts),
+});
+registerNetworkHooks(knowledgeWorkMoENetwork, {
+  onErrorInvoke: (err, input, opts) => fallbackNetworkInvoke([deanInsightsNetwork], input, opts),
+});
 
 // --- Original Helper Function (Revised to use final export map) ---
 

@@ -186,12 +186,48 @@ export const coderAgentConfig: BaseAgentConfig = {
     When receiving a coding request, mentally evaluate multiple solution strategies before implementing, ensuring your code is efficient, maintainable, and precisely aligned with requirements.
   `,
   toolIds: [
-    "read-file",         // Correct ID for reading files
-    "write-file",        // Correct ID for writing files
-    "search-documents",  // For searching relevant code snippets/docs
-    // "github",         // Omitted - Needs clarification on how GitHub tools are registered in tools/index.ts
-    "analyze-content",   // For understanding code/text content     // Correct ID for calculations (e.g., complexity analysis)              // For executing code snippets safely
-    // Add other relevant tools like specific search tools if needed
+    "read-file",
+    "write-file",
+    "tavily-search",
+    "brave-search",
+    "vector-query",
+    "google-vector-query",
+    "filtered-vector-query",
+    "search-documents",
+    "github_search_repositories",
+    "github_list_user_repos",
+    "github_get_repo",
+    "github_search_code",
+    "read-knowledge-file",
+    "write-knowledge-file",
+    "arxiv_search",
+    "bias-eval",
+    "toxicity-eval",
+    "hallucination-eval",
+    "summarization-eval",
+    "token-count-eval",
+    "create-graph-rag",
+    "graph-rag-query",
+    "wikipedia_get_page_summary",
+    "mkdir",
+    "copy",
+    "move",
+    "list-files-with-walk",
+    "list-files",
+    "delete-file",
+    "edit-file",
+    "create-file",
+    "arxiv_pdf_url",
+    "arxiv_download_pdf",
+    "tickerDetails",
+    "tickerNews",
+    "tickerAggregates",
+    "tickerPreviousClose",
+    "cryptoAggregates",
+    "cryptoPrice",
+    "cryptoTickers",
+    "execute_code",
+    "hyper-agent-task",
   ],
 };
 

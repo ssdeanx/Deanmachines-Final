@@ -8,7 +8,6 @@
 
 import { Agent } from "@mastra/core/agent";
 import { AgentNetwork, type AgentNetworkConfig } from "@mastra/core/network";
-import { createLogger } from "@mastra/core/logger";
 import { type CoreMessage } from "ai"; // Import CoreMessage from the main 'ai' package
 
 // Import the actual agents map (value) and necessary config types/utils
@@ -19,16 +18,26 @@ import {
   createModelInstance,
   DEFAULT_MODELS,
 } from "../../agents/config";
+import { masterAgentConfig } from "../../agents/config/master.config"; // Import master agent config
+import { threadManager } from "../../utils/thread-manager";
+import { createLogger } from "@mastra/core/logger";
+import { configureLangSmithTracing } from "../../services/langsmith";
 
+const logger = createLogger({ name: "MoE-Network", level: "info" });
+
+const langsmithClient = configureLangSmithTracing();
+if (langsmithClient) {
+  logger.info("LangSmith tracing enabled for agent network");
+}
 // Define the type for the agents map more explicitly
 type AgentRegistry = typeof allAgents;
 // Define a type for valid agent IDs based on the registry keys
 type AgentId = keyof AgentRegistry;
 
-const logger = createLogger({ name: "KnowledgeWorkMoENetwork" });
+
 
 // --- Constants ---
-const DEFAULT_FALLBACK_AGENT_ID: AgentId = "researchAgent"; // Use type safety
+const DEFAULT_FALLBACK_AGENT_ID: AgentId = (process.env.MOE_FALLBACK_AGENT_ID as AgentId) || masterAgentConfig.id; // Dynamic fallback: env var or master agent
 
 /**
  * Represents a Mixture of Experts (MoE) network built on Mastra's AgentNetwork.
@@ -59,7 +68,7 @@ export class KnowledgeWorkMoENetwork extends AgentNetwork {
    *                            Choose a model capable of following instructions accurately.
    * @param networkId - A unique identifier string for this network instance (e.g., "knowledge-work-moe-v1").
    * @param fallbackAgentId - The ID of the agent (must be in agentRegistry) to use if routing or execution fails.
-   *                          Defaults to "agentic-assistant".
+   *                          Defaults to MOE_FALLBACK_AGENT_ID env var or master agent id.
    * @throws {Error} If the agentRegistry is empty, no valid expert agents are found,
    *                 or the specified fallbackAgentId is invalid.
    */ constructor(

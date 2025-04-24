@@ -9,14 +9,19 @@
 
 import { google } from "@ai-sdk/google";
 import { AgentNetwork, type AgentNetworkConfig } from "@mastra/core/network";
-import { createLogger } from "@mastra/core/logger";
 import { coderAgent, copywriterAgent } from "../../agents";
 import { createResponseHook } from "../../hooks";
 import type * as MastraTypes from '../../types';
 import type { AgentResponse, ResponseHookConfig, StreamResult } from '../../types';
-
+import { createLogger } from "@mastra/core/logger";
+import { configureLangSmithTracing } from "../../services/langsmith";
 // Configure logger for the network
 const logger = createLogger({ name: "product-launch-network", level: "info" });
+
+const langsmithClient = configureLangSmithTracing();
+if (langsmithClient) {
+  logger.info("LangSmith tracing enabled for agent network");
+}
 
 /**
  * ProductLaunchNetwork

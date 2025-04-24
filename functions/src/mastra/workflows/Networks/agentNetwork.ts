@@ -21,6 +21,16 @@ import { env } from "process";
 import { DEFAULT_MODELS } from "../../agents/config"; // Import for MoE config
 import { KnowledgeWorkMoENetwork } from "./knowledgeWorkMoE.network"; // Import the MoE network class
 import { sharedMemory } from "../../database"; // Import shared memory for network config
+import { threadManager } from "../../utils/thread-manager";
+import { createLogger } from "@mastra/core/logger";
+import { configureLangSmithTracing } from "../../services/langsmith";
+
+const logger = createLogger({ name: "agentNetwork", level: "info" });
+
+const langsmithClient = configureLangSmithTracing();
+if (langsmithClient) {
+  logger.info("LangSmith tracing enabled for agent network");
+}
 
 // Base configuration for all networks to match agent configuration
 // Core properties shared by all networks

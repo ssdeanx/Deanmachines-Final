@@ -189,15 +189,14 @@ export const writerAgentConfig: BaseAgentConfig = {
     When receiving a content creation request, mentally map audience characteristics and information needs before organizing content, ensuring your approach balances comprehensiveness with accessibility while maintaining engagement throughout.
   `,
   toolIds: [
-  "read-file", // Corrected ID
-    "write-file", // Corrected ID
-    "tavily-search", // Specific search tool
-    "brave-search", // Specific search tool
-    "vector-query", // Specific vector tool
-    "google-vector-query", // Specific vector tool
-    "filtered-vector-query", // Specific vector tool
-    "search-documents", // Specific document tool
-    "github_get_user_by_username",
+    "read-file",
+    "write-file",
+    "tavily-search",
+    "brave-search",
+    "vector-query",
+    "google-vector-query",
+    "filtered-vector-query",
+    "search-documents",
     "github_search_repositories",
     "github_list_user_repos",
     "github_get_repo",
@@ -210,6 +209,28 @@ export const writerAgentConfig: BaseAgentConfig = {
     "hallucination-eval",
     "summarization-eval",
     "token-count-eval",
+    "create-graph-rag",
+    "graph-rag-query",
+    "wikipedia_get_page_summary",
+    "mkdir",
+    "copy",
+    "move",
+    "list-files-with-walk",
+    "list-files",
+    "delete-file",
+    "edit-file",
+    "create-file",
+    "arxiv_pdf_url",
+    "arxiv_download_pdf",
+    "tickerDetails",
+    "tickerNews",
+    "tickerAggregates",
+    "tickerPreviousClose",
+    "cryptoAggregates",
+    "cryptoPrice",
+    "cryptoTickers",
+    "execute_code",
+    "hyper-agent-task",
   ],
 };
 

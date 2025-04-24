@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [v0.2.0] - 2025-04-24
 
 ### Added
 
@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dynamic Preprocessing**: Integrated `workflowFactory` to preprocess topics dynamically before research, ensuring flexible, modular workflow composition.
 - **Barrel Export**: Exported `advancedTestWorkflow` from the workflow barrel (`src/mastra/workflows/index.ts`).
 - **Branch-Thinking Integration**: Used branch-thinking to plan and extract improvements and tasks for workflow design.
+- **Memory Integration**: Added `getThreadMemory` and `saveThreadMemory` methods to `thread-manager.ts`.
+- **Memory Schemas**: Added `memoryRequestSchema` and `memoryResponseSchema` to `workflowSchemas.ts`.
+- **Trigger Schema Extensions**: Extended `dynamicInputSchema`, `mainTriggerSchema`, `branchingTriggerSchema`, and `retrySchema` to include `threadId`.
+- **Memory Steps**: Created `memoryStep` and `saveMemoryStep` in `workflowFactory.ts` to auto-load and auto-save memory.
+- **Workflow Helper Update**: Updated `buildWorkflow` in `workflowHelpers.ts` to prepend `memoryStep` and append `saveMemoryStep`.
+- **Type Augmentation**: Augmented Mastra `Memory` type in `types.ts` with `getMemory` and `saveMemory` methods.
+- **Shared Memory Usage**: Switched from `redisMemory` to `sharedMemory` in `thread-manager.ts`.
 
 ### Changed
 
@@ -326,7 +333,7 @@ const { text } = await copywriterAgent.generate(writingResult);
   - Ensured all Polygon endpoints and schemas are patched and exported for agent use.
 
 - **General**
-  - Improved documentation and inline comments for MCP and Polygon tool integration.
+  - Improved documentation and inline comments for tool and agent registration patterns.
   - Clarified async initialization pattern for tool registry to support MCP and other async tools.
   - Confirmed robust async initialization and registration of all MCP tools, including Smithery Toolbox and Docker relay, with successful connection and tool loading logs.
 
@@ -387,7 +394,7 @@ const { text } = await copywriterAgent.generate(writingResult);
 - **General**
   - Standardized tool registration and output schema patching across all Mastra tools.
   - Improved documentation and inline comments for tool and agent registration patterns.
-  - Cleaned up and clarified environment variable requirements in `envSchema`.
+  - Clarified environment variable requirements in `envSchema`.
 
 ### Fixed
 
@@ -584,18 +591,6 @@ const { text } = await copywriterAgent.generate(writingResult);
 - Lint and type errors resolved across all affected files.
 
 ## [v0.0.2] - 2025-04-14
-
-### Added
-
-- Comprehensive response schema for Architecture Agent
-- Enhanced code documentation throughout agent configuration files
-- Improved type safety with additional Zod schema definitions
-
-### Changed
-
-- Refactored agent configuration files to remove redundant `getToolsFromIds` function
-- Centralized tool resolution in the Agent Factory
-- Standardized agent configuration patterns across all agent types
 
 ### Fixed
 

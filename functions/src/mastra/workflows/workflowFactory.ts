@@ -40,6 +40,22 @@ export const memoryStep = new Step({
   },
 });
 
+/**
+ * Step to save persisted memory for a thread at workflow end.
+ */
+export const saveMemoryStep = new Step({
+  id: "saveMemory",
+  inputSchema: memoryRequestSchema.merge(memoryResponseSchema),
+  outputSchema: memoryResponseSchema,
+  execute: async ({ context }) => {
+    const loaded = context.getStepResult(memoryStep) as { memory: any };
+    const { memory } = loaded;
+    const { threadId } = context.triggerData;
+    await threadManager.saveThreadMemory(threadId, memory);
+    return { memory };
+  },
+});
+
 // Additional modular workflow factory functions
 /**
  * Factory for simple dynamic workflow with a single step.
@@ -135,7 +151,9 @@ export function createAdvancedNestedWorkflowFactory(mastra: MastraType): Workflo
         execute: async ({ context }) => {
           const complexWf = createComplexWorkflowFactory(mastra);
           const run = complexWf.createRun();
-          const result = await run.start({ triggerData: { dynamicInput: context.triggerData.dynamicInput } });
+          const result = await run.start({
+            triggerData: { threadId: context.triggerData.threadId, dynamicInput: context.triggerData.dynamicInput },
+          });
           const step2Result = result.results["step2"];
           if (!step2Result || step2Result.status !== "success") {
             throw new Error("Nested workflow 'step2' failed");
@@ -177,7 +195,7 @@ export const createDynamicWorkflowStep = new Step({
       const dynamicWorkflow = createDynamicWorkflowFactory(mastraInstance);
       const run = dynamicWorkflow.createRun();
       const result = await run.start({
-        triggerData: { dynamicInput: inputData },
+        triggerData: { threadId: context.triggerData.threadId, dynamicInput: inputData },
       });
       if (result.results["dynamicStep"]?.status === "success") {
         recordMetrics(span, { status: "success" });
@@ -209,9 +227,9 @@ export const mastra = new Mastra({
   workflows: { mainWorkflow },
 });
 
-export async function runMainWorkflow(inputData: string) {
+export async function runMainWorkflow(threadId: string, inputData: string) {
   const run = mainWorkflow.createRun();
-  return await run.start({ triggerData: { inputData } });
+  return await run.start({ triggerData: { threadId, inputData } });
 }
 
 export { createDynamicWorkflowFactory as default };
@@ -284,7 +302,14 @@ export function createRetryWorkflowFactory(mastra: MastraType): Workflow<any, an
     mastra,
     dynamicInputSchema,
     wf => {
-      const attempt = new Step({ id: "attempt", outputSchema: retrySchema, execute: async () => ({ success: Math.random() > 0.7 }) });
+      const attempt = new Step({
+        id: "attempt",
+        outputSchema: retrySchema,
+        execute: async ({ context }) => ({
+          threadId: context.triggerData.threadId,
+          success: Math.random() > 0.7,
+        }),
+      });
       return wf.step(attempt).until(({ results }: any) => results["attempt"].output.success);
     }
   );
@@ -338,7 +363,9 @@ export function createSafeWorkflowFactory(mastra: MastraType): Workflow<any, any
           try {
             const nested = createDynamicWorkflowFactory(mastra as MastraType);
             const run = nested.createRun();
-            const res = await run.start({ triggerData: { dynamicInput: context.triggerData.dynamicInput } });
+            const res = await run.start({
+              triggerData: { threadId: context.triggerData.threadId, dynamicInput: context.triggerData.dynamicInput },
+            });
             const stepRes = res.results["dynamicStep"];
             if (stepRes?.status === "success") return stepRes.output;
           } catch {

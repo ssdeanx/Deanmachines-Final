@@ -14,6 +14,31 @@ import {
   messageSchema,
   retrySchema,
 } from "./workflowSchemas";
+import { createLogger } from "@mastra/core/logger";
+import { configureLangSmithTracing } from "../services/langsmith";
+import { memoryRequestSchema, memoryResponseSchema } from "./workflowSchemas";
+import { threadManager } from "../utils/thread-manager";
+
+const logger = createLogger({ name: "workflowFactory", level: "info" });
+
+const langsmithClient = configureLangSmithTracing();
+if (langsmithClient) {
+  logger.info("LangSmith tracing enabled for workflow factory");
+}
+
+/**
+ * Step to load persisted memory for a thread at workflow start.
+ */
+export const memoryStep = new Step({
+  id: "loadMemory",
+  inputSchema: memoryRequestSchema,
+  outputSchema: memoryResponseSchema,
+  execute: async ({ context }) => {
+    const { threadId } = context.triggerData;
+    const memory = await threadManager.getThreadMemory(threadId);
+    return { memory };
+  },
+});
 
 // Additional modular workflow factory functions
 /**

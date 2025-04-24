@@ -326,3 +326,14 @@ export const CreateThreadOptionsSchema = z.object({
 
 // Re-export types from services for backward compatibility
 export * from './services/types';
+
+
+
+declare module "@mastra/memory" {
+  interface Memory {
+    /** Retrieve persisted memory for a thread */
+    getMemory(threadId: string): Promise<any>;
+    /** Save memory data for a thread */
+    saveMemory(threadId: string, data: any): Promise<void>;
+  }
+}

@@ -11,6 +11,7 @@ import signoz, { createAISpan } from "../services/signoz";
 import { createLangSmithRun, trackFeedback } from "../services/langsmith";
 import type { ThreadInfo, CreateThreadOptions } from "../types";
 import { ThreadManagerError, CreateThreadOptionsSchema } from "../types";
+import { sharedMemory } from "../database/index";
 
 const logger = createLogger({ name: "thread-manager", level: "info" });
 
@@ -223,6 +224,41 @@ export class ThreadManager {
       logger.error(JSON.stringify({ event: "thread.getUnreadByResource.failed", error: String(error) }));
       span.setStatus({ code: 2, message: String(error) });
       return [];
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Retrieve persisted memory for a thread.
+   */
+  public async getThreadMemory(threadId: string): Promise<any> {
+    const span = createAISpan("memory.get", { threadId });
+    try {
+      if (!sharedMemory) throw new ThreadManagerError("Memory not initialized");
+      const mem = await sharedMemory.getMemory(threadId);
+      span.setStatus({ code: 1 });
+      return mem;
+    } catch (error) {
+      span.setStatus({ code: 2, message: String(error) });
+      throw new ThreadManagerError(String(error));
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Save memory for a thread.
+   */
+  public async saveThreadMemory(threadId: string, data: any): Promise<void> {
+    const span = createAISpan("memory.save", { threadId });
+    try {
+      if (!sharedMemory) throw new ThreadManagerError("Memory not initialized");
+      await sharedMemory.saveMemory(threadId, data);
+      span.setStatus({ code: 1 });
+    } catch (error) {
+      span.setStatus({ code: 2, message: String(error) });
+      throw new ThreadManagerError(String(error));
     } finally {
       span.end();
     }

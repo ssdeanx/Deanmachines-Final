@@ -40,3 +40,9 @@ export const messageSchema = z.object({ message: z.string() });
 
 /** Schema for retry step in control-flow workflow */
 export const retrySchema = z.object({ success: z.boolean() });
+
+/** Schema for memory request: thread identifier */
+export const memoryRequestSchema = z.object({ threadId: z.string() });
+
+/** Schema for memory response: loaded memory blob */
+export const memoryResponseSchema = z.object({ memory: z.any() });

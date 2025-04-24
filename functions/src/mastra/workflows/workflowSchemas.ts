@@ -2,6 +2,7 @@ import { z } from "zod";
 
 /** Input schema for dynamic workflows */
 export const dynamicInputSchema = z.object({
+  threadId: z.string(),
   dynamicInput: z.string(),
 });
 
@@ -12,6 +13,7 @@ export const dynamicOutputSchema = z.object({
 
 /** Trigger schema for main workflow */
 export const mainTriggerSchema = z.object({
+  threadId: z.string(),
   inputData: z.string(),
 });
 
@@ -28,6 +30,7 @@ export const finalResultSchema = z.object({ finalResult: z.string() });
 
 /** Schema for conditional workflow branching */
 export const branchingTriggerSchema = z.object({
+  threadId: z.string(),
   type: z.enum(['simple', 'complex']),
   dynamicInput: z.string(),
 });
@@ -39,7 +42,10 @@ export const isLongSchema = z.object({ isLong: z.boolean() });
 export const messageSchema = z.object({ message: z.string() });
 
 /** Schema for retry step in control-flow workflow */
-export const retrySchema = z.object({ success: z.boolean() });
+export const retrySchema = z.object({
+  threadId: z.string(),
+  success: z.boolean(),
+});
 
 /** Schema for memory request: thread identifier */
 export const memoryRequestSchema = z.object({ threadId: z.string() });

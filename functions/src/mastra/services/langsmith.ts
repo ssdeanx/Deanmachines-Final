@@ -9,6 +9,7 @@ import { env } from "process";
 import { v4 as uuidv4 } from "uuid";
 import { Client as LangSmithClient } from "langsmith";
 import { initializeDefaultTracing, getTracer, logWithTraceContext } from "./tracing";
+import { SpanKind } from '@opentelemetry/api';
 import { createLogger } from "@mastra/core/logger";
 import type { LangSmithConfig } from "../services/types";
 
@@ -71,7 +72,19 @@ export async function createLangSmithRun(
 ): Promise<string> {
   // increment run counter
   runCounter?.add(1, { name });
-  const span = tracer?.startSpan("createLangSmithRun", { attributes: { name } });
+
+  // GenAI semantic instrumentation
+  const operation = 'tool';
+  const model = name;
+  const span = tracer?.startSpan(`${operation} ${model}`, {
+    kind: SpanKind.CLIENT,
+    attributes: {
+      'gen_ai.system': 'langsmith',
+      'gen_ai.operation.name': operation,
+      'gen_ai.request.model': model,
+    },
+  });
+
   if (!langsmithClient) configureLangSmithTracing();
 
   const runId = uuidv4();
@@ -108,7 +121,20 @@ export async function trackFeedback(
 ): Promise<boolean> {
   // increment feedback counter
   feedbackCounter?.add(1, { runId, key: feedback.key ?? "accuracy" });
-  const span = tracer?.startSpan("trackFeedback", { attributes: { runId } });
+
+  // GenAI semantic instrumentation
+  const operation = 'feedback';
+  const model = feedback.key ?? 'feedback';
+  const span = tracer?.startSpan(`${operation} ${model}`, {
+    kind: SpanKind.CLIENT,
+    attributes: {
+      'gen_ai.system': 'langsmith',
+      'gen_ai.operation.name': operation,
+      'gen_ai.request.model': model,
+      ...(typeof feedback.value === 'number' && { 'gen_ai.response.token_count': feedback.value }),
+    },
+  });
+
   if (!langsmithClient) configureLangSmithTracing();
   if (!langsmithClient) {
     logWithTraceContext(logger as unknown as Record<string, (...args: any[]) => void>, "warn", "LangSmith client not available, feedback not tracked");

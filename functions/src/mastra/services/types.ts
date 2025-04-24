@@ -197,7 +197,16 @@ export const OTelAttributeNames = {
   // Error
   ERROR: 'error',
   ERROR_MESSAGE: 'error.message',
-  ERROR_STACK: 'error.stack'
+  ERROR_STACK: 'error.stack',
+
+  // GenAI semantic attributes
+  GEN_AI_SYSTEM: 'gen_ai.system',
+  GEN_AI_OPERATION_NAME: 'gen_ai.operation.name',
+  GEN_AI_REQUEST_MODEL: 'gen_ai.request.model',
+  GEN_AI_RESPONSE_TOKEN_COUNT: 'gen_ai.response.token_count',
+  GEN_AI_USAGE_INPUT_TOKENS: 'gen_ai.usage.input_tokens',
+  GEN_AI_USAGE_OUTPUT_TOKENS: 'gen_ai.usage.output_tokens',
+  GEN_AI_USAGE_LATENCY_MS: 'gen_ai.usage.latency_ms',
 } as const;
 
 /**
@@ -292,4 +301,49 @@ export interface OTelService {
   
   /** Gracefully shut down OpenTelemetry */
   shutdown(): Promise<void>;
+}
+
+/**
+ * Langfuse trace creation options
+ */
+export interface LangfuseTraceOptions {
+  userId?: string;
+  metadata?: Record<string, unknown>;
+  tags?: string[];
+}
+
+/**
+ * Langfuse span creation options
+ */
+export interface LangfuseSpanOptions {
+  traceId: string;
+  parentSpanId?: string;
+  input?: unknown;
+  metadata?: Record<string, unknown>;
+  tags?: string[];
+}
+
+/**
+ * Langfuse generation event options
+ */
+export interface LangfuseGenerationOptions {
+  traceId: string;
+  input: unknown;
+  output?: unknown;
+  promptTokens?: number;
+  completionTokens?: number;
+  model?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Langfuse score options
+ */
+export interface LangfuseScoreOptions {
+  name: string;
+  value: number;
+  traceId?: string;
+  spanId?: string;
+  generationId?: string;
+  comment?: string;
 }

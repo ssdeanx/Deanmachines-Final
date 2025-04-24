@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Langfuse } from "langfuse";
 import { createLogger } from "@mastra/core/logger";
+import type { LangfuseTraceOptions, LangfuseSpanOptions, LangfuseGenerationOptions, LangfuseScoreOptions } from "./types";
 import { env } from "process";
 
 /**
@@ -99,14 +100,16 @@ export class LangfuseService {
    * @param options - Additional options for the trace
    * @returns Trace object
    */
-  createTrace(name: string, options?: {
-    userId?: string;
-    metadata?: Record<string, unknown>;
-    tags?: string[];
-  }) {
+  createTrace(name: string, options?: LangfuseTraceOptions) {
     try {
-      logger.debug("Creating Langfuse trace", { name, ...options });
-      return this.client.trace({ name, ...options });
+      const { userId, metadata, tags } = options || {};
+      const enrichedMetadata = {
+        ...metadata,
+        'gen_ai.system': 'langfuse',
+        ...(userId && { 'gen_ai.request.user_id': userId }),
+      };
+      logger.debug("Creating Langfuse trace", { name, userId, metadata: enrichedMetadata, tags });
+      return this.client.trace({ name, userId, metadata: enrichedMetadata, tags } as any);
     } catch (error) {
       logger.error("Error creating trace:", { error, name });
       throw new Error(`Failed to create Langfuse trace: ${error instanceof Error ? error.message : String(error)}`);
@@ -120,16 +123,16 @@ export class LangfuseService {
    * @param options - Configuration options for the span
    * @returns Span object
    */
-  createSpan(name: string, options: {
-    traceId: string;
-    parentSpanId?: string;
-    input?: unknown;
-    metadata?: Record<string, unknown>;
-    tags?: string[];
-  }) {
+  createSpan(name: string, options: LangfuseSpanOptions) {
     try {
-      logger.debug("Creating Langfuse span", { name, ...options });
-      return this.client.span({ name, ...options });
+      const { metadata, ...rest } = options;
+      const enrichedMetadata = {
+        ...metadata,
+        'gen_ai.system': 'langfuse',
+        'gen_ai.operation.name': name,
+      };
+      logger.debug("Creating Langfuse span", { name, metadata: enrichedMetadata, ...rest });
+      return this.client.span({ name, metadata: enrichedMetadata, ...rest } as any);
     } catch (error) {
       logger.error("Error creating span:", { error, name });
       throw new Error(`Failed to create Langfuse span: ${error instanceof Error ? error.message : String(error)}`);
@@ -143,19 +146,34 @@ export class LangfuseService {
    * @param options - Configuration options for the generation
    * @returns Generation object
    */
-  logGeneration(name: string, options: {
-    traceId: string;
-    input: unknown;
-    output?: unknown;
-    promptTokens?: number;
-    completionTokens?: number;
-    model?: string;
-    metadata?: Record<string, unknown>;
-    tags?: string[];
-  }) {
+  logGeneration(name: string, options: LangfuseGenerationOptions) {
     try {
-      logger.debug("Logging Langfuse generation", { name, ...options });
-      return this.client.generation({ name, ...options });
+      const { metadata, promptTokens, completionTokens, model, input, output, traceId } = options;
+      const enrichedMetadata = {
+        ...metadata,
+        'gen_ai.system': 'langfuse',
+        'gen_ai.operation.name': 'generation',
+        ...(model && { 'gen_ai.request.model': model }),
+        ...(promptTokens !== undefined && { 'gen_ai.usage.input_tokens': promptTokens }),
+        ...(completionTokens !== undefined && { 'gen_ai.usage.output_tokens': completionTokens }),
+      };
+      logger.debug("Logging Langfuse generation", {
+        name,
+        traceId,
+        input,
+        output,
+        metadata: enrichedMetadata,
+      });
+      return this.client.generation({
+        name,
+        traceId,
+        input,
+        output,
+        metadata: enrichedMetadata,
+        promptTokens,
+        completionTokens,
+        model,
+      } as any);
     } catch (error) {
       logger.error("Error logging generation:", { error, name });
       throw new Error(`Failed to log Langfuse generation: ${error instanceof Error ? error.message : String(error)}`);
@@ -169,14 +187,7 @@ export class LangfuseService {
    * @returns Score object
    * @throws {Error} If no target ID (traceId, spanId, or generationId) is provided
    */
-  createScore(options: {
-    name: string;
-    value: number;
-    traceId?: string;
-    spanId?: string;
-    generationId?: string;
-    comment?: string;
-  }) {
+  createScore(options: LangfuseScoreOptions) {
     try {
       logger.debug("Creating Langfuse score", options);
 

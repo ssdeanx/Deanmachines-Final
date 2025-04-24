@@ -1,0 +1,44 @@
+# OpenTelemetry Collector Configuration for Deanmachines project
+
+# Receivers: accept OTLP from application
+receivers:
+  otlp:
+    protocols:
+      grpc: {}
+      http: {}
+
+# Processors: batch export
+processors:
+  batch:
+
+# Exporters: send to multiple backends
+exporters:
+  otlp/sigNoz:
+    endpoint: "${SIGNOZ_OTLP_ENDPOINT:http://localhost:4318}"
+    headers:
+      x-api-key: "${SIGNOZ_OTLP_API_KEY}"
+
+  otlp/langfuse:
+    endpoint: "${LANGFUSE_OTLP_ENDPOINT:https://cloud.langfuse.com/otel/v1/traces}"
+    headers:
+      x-api-key: "${LANGFUSE_OTLP_API_KEY}"
+
+  logging:
+    logLevel: debug
+
+extensions:
+  health_check:
+
+service:
+  extensions: [health_check]
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/sigNoz, otlp/langfuse, logging]
+
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/sigNoz, logging]

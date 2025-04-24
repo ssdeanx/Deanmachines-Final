@@ -42,7 +42,7 @@ export {
  */
 import * as api from "@opentelemetry/api";
 import { configureLangSmithTracing } from "./langsmith"; // Assuming configureLangSmithTracing returns something specific
-import { initializeDefaultTracing } from "./tracing"; // Assuming getOpenTelemetrySdk returns something specific
+import { initOpenTelemetry } from "./tracing"; // Assuming getOpenTelemetrySdk returns something specific
 import { initSigNoz } from "./signoz"; // Assuming initSigNoz is void or returns something else
 // Assuming the getTracer imported from './signoz' is the intended one for use within initObservability
 import { getTracer as getSigNozTracer } from './signoz'; 
@@ -61,10 +61,12 @@ export function initObservability(config: {
   otelEnabled?: boolean;
   serviceName?: string;
   environment?: string;
-  export?: { // Add the optional export property
+  exporters?: Array<{
+    type: 'otlp' | 'console';
     endpoint?: string;
     headers?: Record<string, string>;
-  };
+    metricsInterval?: number;
+  }>;
 }) {
   const services: {
     langfuse: typeof langfuseService | null;
@@ -76,32 +78,18 @@ export function initObservability(config: {
     signoz: null,
   };
   const serviceName = process.env.MASTRA_SERVICE_NAME || config.serviceName || 'deanmachines-ai-mastra';
-  // default to the OTLP traces path if no custom endpoint provided
-  const tracesEndpoint =
-    process.env.OTEL_EXPORTER_OTLP_ENDPOINT ||
-    config.export?.endpoint ||
-    'http://localhost:4318/v1/traces';
-  // derive metrics endpoint from the traces path
-  const metricsEndpoint =
-    process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT ||
-    tracesEndpoint.replace('/v1/traces', '/v1/metrics');
-  const headers = config.export?.headers || {};
-  // Get service name and environment from config or environment variables
-
   const environment = config.environment || process.env.NODE_ENV || 'development';
-  // Log the environment to ensure it's read (useful for debugging setup)
   console.log(`Configuring observability for environment: ${environment}`);
-
-  // Log and use metrics endpoint and headers to silence unused‐value warnings
-  console.log(`Configuring OTLP endpoints – traces: ${tracesEndpoint}, metrics: ${metricsEndpoint}`);
-  console.debug("OTLP headers:", headers);
 
   // Initialize OpenTelemetry if enabled (most general, initialize first)
   if (config.otelEnabled !== false) {
-    // Assuming initializeDefaultTracing sets up the global provider using serviceName and defaults/env vars
-    // Note: This call uses the existing signature which doesn't take exporter options directly.
-    // Configuration relies on environment variables read within initOpenTelemetry called by initializeDefaultTracing.
-    initializeDefaultTracing(serviceName); 
+    initOpenTelemetry({
+      serviceName,
+      serviceVersion: process.env.npm_package_version,
+      environment,
+      enabled: true,
+      exporters: config.exporters,
+    });
   }
 
   // Initialize Langfuse if enabled
@@ -124,8 +112,8 @@ export function initObservability(config: {
     initSigNoz({
       serviceName,
       export: {
-        endpoint: tracesEndpoint,
-        headers,
+        endpoint: config.exporters?.find(exporter => exporter.type === 'otlp')?.endpoint,
+        headers: config.exporters?.find(exporter => exporter.type === 'otlp')?.headers,
         // metricsEndpoint is typically derived or set via env vars like OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
         type: "otlp",
       },
@@ -152,6 +140,5 @@ export function getTracer(name?: string, version?: string): api.Tracer {
 }
 export {
   initOpenTelemetry,
-  initializeDefaultTracing,
   getTracer as getOtelTracer, // Renamed export to avoid conflict
 } from './tracing';

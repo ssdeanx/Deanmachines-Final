@@ -17,6 +17,7 @@ import { SemanticResourceAttributes, SemanticAttributes } from '@opentelemetry/s
 import * as api from '@opentelemetry/api';
 import { env } from 'process';
 import { createLogger } from '@mastra/core/logger';
+import { SpanKind } from '@opentelemetry/api';
 
 // import the *type* and factory *value* from types.ts
 import type { ResourceType } from './types';
@@ -53,9 +54,13 @@ export function initSigNoz(config: OtelConfig = {}): { tracer: api.Tracer | null
 
   try {
     const serviceName = env.MASTRA_SERVICE_NAME || config.serviceName || 'deanmachines-ai-mastra';
-    const tracesEndpoint = env.OTEL_EXPORTER_OTLP_ENDPOINT || config.export?.endpoint || 'http://localhost:4318/';
+
+    // Normalize export config: handle single or array export
+    const singleExport = Array.isArray(config.export) ? config.export[0] : config.export;
+    const exporter = config.exporters?.[0] ?? singleExport;
+    const tracesEndpoint = exporter?.endpoint || env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/';
     const metricsEndpoint = env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT || tracesEndpoint.replace('/v1/traces', '/v1/metrics');
-    const headers = config.export?.headers || {};
+    const headers = exporter?.headers || {};
 
     logger.info(`Initializing SigNoz telemetry for service: ${serviceName}`, {
       tracesEndpoint,
@@ -77,7 +82,7 @@ export function initSigNoz(config: OtelConfig = {}): { tracer: api.Tracer | null
       traceExporter: new OTLPTraceExporter({ url: tracesEndpoint, headers }),
       metricReader: new PeriodicExportingMetricReader({
         exporter: new OTLPMetricExporter({ url: metricsEndpoint, headers }),
-        exportIntervalMillis: config.export?.metricsInterval ?? 60000
+        exportIntervalMillis: exporter?.metricsInterval ?? 60000
       }),
       instrumentations: [getNodeAutoInstrumentations()],
       ...(env.NODE_ENV !== 'production' && {
@@ -150,9 +155,12 @@ export function createAISpan(
 ): api.Span {
   try {
     const currentTracer = getTracer();
+    // GenAI semantic instrumentation
     return currentTracer.startSpan(name, {
+      kind: SpanKind.CLIENT,
       attributes: {
-        'ai.operation': name,
+        'gen_ai.system': 'signoz',
+        'gen_ai.operation.name': name,
         ...attributes
       },
       ...options
@@ -178,11 +186,15 @@ export function recordLlmMetrics(
   if (!span || !span.isRecording()) return;
 
   try {
+    // GenAI semantic metrics
     if (tokenInfo?.promptTokens !== undefined) {
-      span.setAttribute(OTelAttributeNames.PROMPT_TOKENS, tokenInfo.promptTokens);
+      span.setAttribute('gen_ai.usage.input_tokens', tokenInfo.promptTokens);
+    }
+    if (tokenInfo?.completionTokens !== undefined) {
+      span.setAttribute('gen_ai.usage.output_tokens', tokenInfo.completionTokens);
     }
     if (latencyMs !== undefined) {
-      span.setAttribute(OTelAttributeNames.LATENCY_MS, latencyMs);
+      span.setAttribute('gen_ai.usage.latency_ms', latencyMs);
     }
   } catch (error) {
     logger.warn('Failed to record LLM metrics on span', { error: (error as Error).message });
@@ -206,7 +218,11 @@ export function recordMetrics(
   }
 ): void {
   if (!span || !span.isRecording()) return;
-
+  // GenAI semantic metrics annotation
+  span.setAttribute('gen_ai.system', 'signoz');
+  if (metrics.tokens !== undefined) {
+    span.setAttribute('gen_ai.usage.output_tokens', metrics.tokens as number);
+  }
   try {
     const { status, errorMessage, latencyMs, tokens, ...extraAttributes } = metrics;
 
@@ -259,9 +275,11 @@ export function createHttpSpan(
     const { attributes = {}, ...spanOptions } = options;
     const parsedUrl = new URL(url);
 
-    return currentTracer.startSpan(`HTTP ${method.toUpperCase()}`, {
-      kind: api.SpanKind.CLIENT,
+    return currentTracer.startSpan(`GenAI HTTP ${method.toUpperCase()}`, {
+      kind: SpanKind.CLIENT,
       attributes: {
+        'gen_ai.system': 'signoz',
+        'gen_ai.operation.name': 'http_request',
         [SemanticAttributes.HTTP_METHOD]: method.toUpperCase(),
         [SemanticAttributes.HTTP_URL]: url,
         [SemanticAttributes.NET_PEER_NAME]: parsedUrl.hostname,

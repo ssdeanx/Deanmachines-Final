@@ -22,6 +22,7 @@ import { masterAgentConfig } from "../../agents/config/master.config"; // Import
 import { threadManager } from "../../utils/thread-manager";
 import { createLogger } from "@mastra/core/logger";
 import { configureLangSmithTracing } from "../../services/langsmith";
+import { applySharedHooks, instrumentNetwork, scheduleMemoryCompaction } from "./networkHelpers";
 
 const logger = createLogger({ name: "MoE-Network", level: "info" });
 
@@ -191,6 +192,17 @@ export class KnowledgeWorkMoENetwork extends AgentNetwork {
     logger.info(
       `[${this.networkId}] KnowledgeWorkMoENetwork initialized successfully with ${this.expertAgentsMap.size} agents (including fallback).`
     );
+
+    // Apply shared hooks, instrumentation, and memory compaction
+    applySharedHooks(this, {
+      onError: async (error: Error) => {
+        logger.error(`[${this.networkId}] MoE network error: ${error.message}`);
+        return { text: `Routing error: ${error.message}`, error: error.message };
+      },
+      onGenerateResponse: async (res: any) => res,
+    });
+    instrumentNetwork(this);
+    scheduleMemoryCompaction(this);
   }
 
   /**

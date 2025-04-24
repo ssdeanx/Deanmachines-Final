@@ -1,9 +1,57 @@
+<!-- markdownlint-disable MD024 MD031 -->
 # Changelog
 
 All notable changes to the DeanMachines Mastra Backend will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [v0.2.1] - 2025-04-24
+
+### Changed
+
+- **KnowledgeWorkMoENetwork** (`src/mastra/workflows/Networks/knowledgeWorkMoE.network.ts`): imported `applySharedHooks`, `instrumentNetwork`, `scheduleMemoryCompaction`; after `super(config)`, applied hooks for error logging, instrumented core methods, and scheduled memory compaction.
+- **ProductLaunchNetwork** (`src/mastra/workflows/Networks/productLaunchNetwork.ts`): applied the same helpers (with `createResponseHook` for validation) immediately after instantiation for unified resilience and observability.
+
+### Added
+
+- Integrated core helper functions into network modules to ensure consistent error handling, instrumentation, and automatic memory management.
+
+### networkHelpers.ts Details
+
+- `applySharedHooks(network, hooks)`: attaches `onError` & `onGenerateResponse` for centralized error logging and custom response handling.
+- `instrumentNetwork(net, config?)`: wraps `execute`, `stream`, `generate` with `executeWithThread`, `streamWithThread`, and `generateWithMemory` to integrate thread and memory context.
+- `scheduleMemoryCompaction(network, idleMs = 864e5, iv = 864e5)`: schedules periodic summarization and compaction of thread memory entries older than `idleMs`, preserving concise summaries.
+
+### Tool Helpers Pattern
+
+Mirror this network pattern by creating `toolHelpers.ts`:
+
+- `applySharedToolHooks(tool, hooks)`: attach `onError`, `onBeforeInvoke`, and `onAfterInvoke` hooks on tool instances.
+- `instrumentTool(tool, config?)`: wrap primary methods (`execute`, `run`, etc.) with threading and memory context.
+- `scheduleToolCacheCleanup(tool, idleMs, iv)`: schedule periodic cleanup of tool-related cache or logs.
+
+#### Implementation Steps
+
+1. Import core utilities: `logger`, `threadManager`, `sharedMemory`.
+2. Define and export helper functions in `toolHelpers.ts`.
+3. Apply these helpers to tool instances for consistent error handling, instrumentation, and maintenance.
+4. Document the pattern with JSDoc and code examples.
+
+#### Usage Example
+
+```ts
+import { applySharedToolHooks, instrumentTool, scheduleToolCacheCleanup } from './toolHelpers';
+const myTool = new MyTool(config);
+applySharedToolHooks(myTool, {
+  onError: err => logger.error(err),
+  onAfterInvoke: res => res,
+});
+instrumentTool(myTool);
+scheduleToolCacheCleanup(myTool, 3600000, 3600000);
+```
 
 ---
 
@@ -310,55 +358,6 @@ const { text } = await copywriterAgent.generate(writingResult);
 
 ### Added
 
-- **mcptool.ts**
-  - Added `createMastraMcpTools` helper for robust async MCP tool loading, supporting multiple MCP servers (`mastra`, `sequentialthinking`, and a custom `socat` TCP relay).
-  - Ensured only Mastra-native helpers and types are used (no `@agentic/mastra`).
-  - Ready for direct use in agent and tool registry initialization.
-  - Added `@smithery/toolbox` MCP server configuration. Smithery Toolbox MCP tools are now auto-discovered and available to agents.
-  - Docker-based socat relay MCP server is now included and confirmed working.
-  - Both Smithery.ai MCP tools and the custom Docker server are connected and operational, as verified by successful tool initialization logs.
-  - Improved error handling and logging for MCP tool initialization.
-
-- **index.ts (tool barrel)**
-  - Integrated async MCP tool initialization using `createMastraMcpTools` in the extra tools section.
-  - MCP tools are now loaded and available to agents via `allTools`, `allToolsMap`, and `toolGroups`.
-  - Added `export * from "./mcptool";` for unified exports.
-  - Provided clear comments and error handling for async tool loading.
-  - MCP tools from Smithery.ai and Docker are now included in the unified tool registry and available to all agents.
-
-### Changed
-
-- **Polygon Tools**
-  - Cleaned up and finalized Polygon tool schemas and registration.
-  - Ensured all Polygon endpoints and schemas are patched and exported for agent use.
-
-- **General**
-  - Improved documentation and inline comments for tool and agent registration patterns.
-  - Clarified async initialization pattern for tool registry to support MCP and other async tools.
-  - Confirmed robust async initialization and registration of all MCP tools, including Smithery Toolbox and Docker relay, with successful connection and tool loading logs.
-
-### Fixed
-
-- Removed all references to `@agentic/mastra` in MCP tool loading to prevent cross-package errors.
-- Ensured MCP tools are loaded asynchronously and safely, with robust error logging.
-- Confirmed all tools (including MCP, Polygon, Reddit, etc.) are discoverable and usable by agents.
-- Ensured all MCP servers (Smithery Toolbox and Docker) are reachable and tools are loaded without errors.
-- Improved error logging for MCP initialization failures.
-
-### Notes
-
-- MCP tools now follow the Mastra pattern: async loading, explicit Zod schemas, and unified exports.
-- Smithery.ai MCP tools and Docker-based MCP server are now fully integrated and operational in the Mastra tool registry.
-- Initialization logs confirm all MCP tools are connected and available for agent use.
-- All changes linted and type-checked after edits.
-- Next steps: Continue to document new tool patterns and agent integration in this changelog for future maintainers.
-
----
-
-## [v0.1.1] - 2025-04-19
-
-### Added
-
 - **arxiv.ts**
   - Implemented `arxiv_download_pdf` tool: Downloads a PDF for a given arXiv ID and saves it to disk using `fs-extra` and `ky`. Ensures directory creation and robust file writing.
   - All arXiv tools now have explicit Zod output schemas (`ArxivSearchOutputSchema`, `ArxivPdfUrlOutputSchema`, `ArxivDownloadPdfOutputSchema`).
@@ -399,7 +398,7 @@ const { text } = await copywriterAgent.generate(writingResult);
 ### Fixed
 
 - Ensured all tools have explicit output schemas and are patched at registration, preventing runtime errors in Mastra workflows.
-  - SigNoz tracer + meter via `initSigNoz()`.  
+- SigNoz tracer + meter via `initSigNoz()`.  
   • Created spans around agent lifecycle (`agent.create`, `agent.debug/info/warn/error`).  
   • Recorded metrics (`agent.creation.count`, `agent.creation.latency_ms`).  
   • **Voice integration is stubbed**—the `createGoogleVoice()` import and `voice` prop in the `Agent` constructor are commented out because real‑time streaming (connect, listen, speaker events) is not yet implemented.  
@@ -423,7 +422,7 @@ const { text } = await copywriterAgent.generate(writingResult);
   3. Pass the active `voice` instance into the `Agent` constructor.  
   4. Un‑comment the `voice` lines and verify end‑to‑end audio streaming.
 
-## [v0.1.0] - 2025-04-16
+## [v0.1.1] - 2025-04-16
 
 ### Added
 
@@ -545,6 +544,17 @@ const { text } = await copywriterAgent.generate(writingResult);
 
 ## [v0.0.4] - 2025-04-15
 
+### Fixed
+
+- Removed duplicate code that was causing maintenance issues
+- Improved code consistency across agent configuration files
+
+### Security
+
+- Updated dependencies to address potential vulnerabilities
+
+## [v0.0.3] - 2025-04-15
+
 ### Added
 
 - Dev is testing for working tools and agent configurations.
@@ -569,26 +579,6 @@ const { text } = await copywriterAgent.generate(writingResult);
   - node-fetch: For reliably fetching documents from URLs.
 - Implementation: These packages should be utilized within a new Mastra AI Tool (e.g., readDocumentContent). This tool will inspect the input file path or URL, determine the likely document type (based on extension or potentially content-type for URLs), and invoke the appropriate parsing library to return the extracted text content for further processing by the agent.
 -  
-
-## [v0.0.3] - 2025-04-14
-
-### Added
-
-- Comprehensive evals toolset in `tools/evals.ts` with SigNoz tracing: includes completeness, answer relevancy, content similarity, context precision, context position, tone consistency, keyword coverage, textual difference, faithfulness, and token count metrics.
-- All eval tools output normalized scores, explanations, and are ready for agent/workflow integration.
-- LlamaIndex tool output schema and type safety improvements.
-
-### Changed
-
-- Integrated SigNoz tracing into all eval tools and reinforced tracing in agent and tool workflows.
-- Updated RL Trainer agent config and tool registration for robust RL workflows.
-- Updated tool barrel (`tools/index.ts`) to ensure all schemas and tools are exported only once and are available for agent configs.
-
-### Fixed
-
-- Removed all duplicate schema/tool exports in `wikibase.ts`, `wikidata-client.ts`, `github.ts`, `llamaindex.ts`, and `evals.ts`.
-- Fixed throttle type mismatches and replaced unsupported string methods for broader TypeScript compatibility.
-- Lint and type errors resolved across all affected files.
 
 ## [v0.0.2] - 2025-04-14
 

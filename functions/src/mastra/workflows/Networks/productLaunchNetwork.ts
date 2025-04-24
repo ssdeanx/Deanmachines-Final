@@ -15,6 +15,7 @@ import type * as MastraTypes from '../../types';
 import type { AgentResponse, ResponseHookConfig, StreamResult } from '../../types';
 import { createLogger } from "@mastra/core/logger";
 import { configureLangSmithTracing } from "../../services/langsmith";
+import { applySharedHooks, instrumentNetwork, scheduleMemoryCompaction } from "./networkHelpers";
 // Configure logger for the network
 const logger = createLogger({ name: "product-launch-network", level: "info" });
 
@@ -79,6 +80,17 @@ const productLaunchHooks: ResponseHookConfig = {
 // Example usage of StreamResult type for future streaming support
 // (This is a placeholder for where you would use StreamResult in your network logic)
 // type ProductLaunchStream = StreamResult<AgentResponse>;
+
+// Apply shared hooks, instrumentation, and memory compaction
+applySharedHooks(productLaunchNetwork, {
+  onError: async (error: Error) => {
+    logger.error("ProductLaunchNetwork error:", error);
+    return { text: "The product launch network encountered an error. Please try again or contact support.", error: error.message };
+  },
+  onGenerateResponse: createResponseHook(productLaunchHooks),
+});
+instrumentNetwork(productLaunchNetwork);
+scheduleMemoryCompaction(productLaunchNetwork);
 
 /**
  * Initialize the ProductLaunchNetwork

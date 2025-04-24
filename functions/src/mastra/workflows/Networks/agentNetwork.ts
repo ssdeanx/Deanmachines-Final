@@ -2,7 +2,7 @@
  * @file src/mastra/workflows/Networks/agentNetwork.ts
  * @description Defines and exports various AgentNetworks for DeanmachinesAI,
  *              including specialized collaborative networks and a Mixture of Experts (MoE) network.
- * @version 1.1.0 - Added KnowledgeWorkMoENetwork, preserving original structure
+ * @version 1.2.0 - Added KnowledgeWorkMoENetwork, preserving original structure
  */
 
 import { google } from "@ai-sdk/google";
@@ -318,25 +318,109 @@ export const knowledgeWorkMoENetwork = new KnowledgeWorkMoENetwork(
 instrumentNetwork(knowledgeWorkMoENetwork);
 scheduleMemoryCompaction(knowledgeWorkMoENetwork);
 
+// --- Master Exploration and Master Debug Networks (Added) ---
+
+export const masterExplorationNetwork = new AgentNetwork({
+  ...baseNetworkConfig,
+  model: baseNetworkConfig.model!,
+  name: "Master Exploration Network",
+  agents: [
+    agents.masterAgent,
+    agents.researchAgent,
+    agents.analystAgent,
+    agents.writerAgent,
+    agents.rlTrainerAgent,
+    agents.dataManagerAgent,
+    agents.agenticAssistant,
+    agents.coderAgent,
+    agents.architectAgent,
+    agents.debuggerAgent,
+    agents.uiUxCoderAgent,
+    agents.codeDocumenterAgent,
+    agents.copywriterAgent,
+    agents.marketResearchAgent,
+    agents.socialMediaAgent,
+    agents.seoAgent,
+  ],
+  instructions: renderTemplate(`
+    You are the Master Exploration Network. You leverage the capabilities of the Master Agent to explore, test, and prototype complex workflows and tasks. Use available tools and workflows as needed to provide detailed exploratory outputs.
+  `, {}),
+});
+applySharedHooks(masterExplorationNetwork, {
+  onError: async (_err: Error) => ({ text: `Master Exploration Network error: ${_err.message}`, error: _err.message }),
+  onGenerateResponse: async (res: any) => res,
+});
+instrumentNetwork(masterExplorationNetwork);
+scheduleMemoryCompaction(masterExplorationNetwork);
+
+export const masterDebugNetwork = new AgentNetwork({
+  ...baseNetworkConfig,
+  model: baseNetworkConfig.model!,
+  name: "Master Debug Network",
+  agents: [
+    agents.masterAgent,
+    agents.researchAgent,
+    agents.analystAgent,
+    agents.writerAgent,
+    agents.rlTrainerAgent,
+    agents.dataManagerAgent,
+    agents.agenticAssistant,
+    agents.coderAgent,
+    agents.architectAgent,
+    agents.debuggerAgent,
+    agents.uiUxCoderAgent,
+    agents.codeDocumenterAgent,
+    agents.copywriterAgent,
+    agents.marketResearchAgent,
+    agents.socialMediaAgent,
+    agents.seoAgent,
+  ],
+  instructions: renderTemplate(`
+    You are the Master Debug Network. You leverage the Master Agent to analyze errors, debug workflows, and suggest fixes. Prioritize clarity and actionable steps.
+  `, {}),
+});
+applySharedHooks(masterDebugNetwork, {
+  onError: async (_err: Error) => ({ text: `Master Debug Network error: ${_err.message}`, error: _err.message }),
+  onGenerateResponse: async (res: any) => res,
+});
+instrumentNetwork(masterDebugNetwork);
+scheduleMemoryCompaction(masterDebugNetwork);
+
 // Schedule periodic health checks
 scheduleHealthChecks(
-  [deanInsightsNetwork, dataFlowNetwork, contentCreationNetwork, knowledgeWorkMoENetwork],
+  [deanInsightsNetwork, dataFlowNetwork, contentCreationNetwork, knowledgeWorkMoENetwork, masterExplorationNetwork, masterDebugNetwork],
   60000
 );
 
 // Register fallback to MoE network on errors
 registerNetworkHooks(deanInsightsNetwork, {
-  onErrorInvoke: (err, input, opts) => fallbackNetworkInvoke([knowledgeWorkMoENetwork], input, opts),
+  onErrorInvoke: (_err, input, opts) => fallbackNetworkInvoke([knowledgeWorkMoENetwork], input, opts),
 });
 registerNetworkHooks(dataFlowNetwork, {
-  onErrorInvoke: (err, input, opts) => fallbackNetworkInvoke([knowledgeWorkMoENetwork], input, opts),
+  onErrorInvoke: (_err, input, opts) => fallbackNetworkInvoke([knowledgeWorkMoENetwork], input, opts),
 });
 registerNetworkHooks(contentCreationNetwork, {
-  onErrorInvoke: (err, input, opts) => fallbackNetworkInvoke([knowledgeWorkMoENetwork], input, opts),
+  onErrorInvoke: (_err, input, opts) => fallbackNetworkInvoke([knowledgeWorkMoENetwork], input, opts),
 });
 registerNetworkHooks(knowledgeWorkMoENetwork, {
-  onErrorInvoke: (err, input, opts) => fallbackNetworkInvoke([deanInsightsNetwork], input, opts),
+  onErrorInvoke: (_err, input, opts) => fallbackNetworkInvoke([deanInsightsNetwork], input, opts),
 });
+
+// --- Final Export Map for Mastra Configuration (Updated) ---
+
+/**
+ * Export all instantiated networks in a map format compatible with the Mastra instance configuration.
+ * The keys MUST be the unique string IDs assigned during instantiation, used for invoking networks.
+ */
+export const networks = {
+  // Use the unique IDs assigned during instantiation as keys
+  "dean-insights": deanInsightsNetwork,
+  "data-flow": dataFlowNetwork,
+  "content-creation": contentCreationNetwork,
+  "knowledge-work-moe-v1": knowledgeWorkMoENetwork,
+  "master-exploration": masterExplorationNetwork,
+  "master-debug": masterDebugNetwork,
+};
 
 // --- Original Helper Function (Revised to use final export map) ---
 
@@ -351,17 +435,3 @@ export function getAgentNetwork(networkId: string): AgentNetwork | undefined {
   // This map is defined below and uses the correct string IDs as keys.
   return networks[networkId as keyof typeof networks];
 }
-
-// --- Final Export Map for Mastra Configuration (Updated) ---
-
-/**
- * Export all instantiated networks in a map format compatible with the Mastra instance configuration.
- * The keys MUST be the unique string IDs assigned during instantiation, used for invoking networks.
- */
-export const networks = {
-  // Use the unique IDs assigned during instantiation as keys
-  "dean-insights": deanInsightsNetwork,
-  "data-flow": dataFlowNetwork,
-  "content-creation": contentCreationNetwork,
-  "knowledge-work-moe-v1": knowledgeWorkMoENetwork, // Add the MoE network using its ID
-};

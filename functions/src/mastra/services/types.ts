@@ -89,8 +89,20 @@ export interface OtelConfig {
     type: "otlp" | "console";
     endpoint?: string;
     headers?: Record<string, string>;
-    metricsInterval?: number;  // ← added: export interval in milliseconds for metrics
-  };
+    metricsInterval?: number;
+  } | Array<{
+    type: "otlp" | "console";
+    endpoint?: string;
+    headers?: Record<string, string>;
+    metricsInterval?: number;
+  }>;
+  /** Alias for multiple exporter configurations */
+  exporters?: Array<{
+    type: "otlp" | "console";
+    endpoint?: string;
+    headers?: Record<string, string>;
+    metricsInterval?: number;
+  }>;
 }
 
 /** Valid types for telemetry attribute values */

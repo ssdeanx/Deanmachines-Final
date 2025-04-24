@@ -29,6 +29,7 @@ import {
   ParentBasedSampler,
   TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-base';
+import { BatchSpanProcessor, ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
 import { createLogger } from '@mastra/core/logger';
 import {
   OTelInitOptions,
@@ -89,26 +90,40 @@ export function logWithTraceContext(
 }
 
 export function initOpenTelemetry(
-  options: OTelInitOptions & { metricsEnabled?: boolean; metricsIntervalMs?: number }
+  options: OTelInitOptions & { exporters?: Array<{ type: 'otlp' | 'console'; endpoint?: string; headers?: Record<string, string>; metricsInterval?: number }>; metricsEnabled?: boolean; metricsIntervalMs?: number }
 ): NodeSDK | null {
   const {
     serviceName = 'deanmachines-ai',
     serviceVersion = '1.0.0',
     environment = 'development',
     enabled = true,
-    endpoint,
+    samplingRatio = 1.0,
+    exporters,
     metricsEnabled = true,
     metricsIntervalMs = 60000,
-    samplingRatio = 1.0,
+    endpoint: defaultEndpoint,
+    headers: defaultHeaders,
   } = options;
 
-  if (!enabled) {
-    logger.info('OpenTelemetry tracing is disabled');
+  // Determine exporter configurations (multi-provider support)
+  const exporterConfigs = (exporters && exporters.length > 0)
+    ? exporters
+    : defaultEndpoint
+      ? [{ type: 'otlp', endpoint: defaultEndpoint, headers: defaultHeaders || {}, metricsInterval: metricsIntervalMs }]
+      : [];
+
+  if (!enabled || exporterConfigs.length === 0) {
+    logger.info('OpenTelemetry tracing is disabled or no exporters configured');
     tracerInstance = null;
     meterProviderInstance = null;
     meterInstance = null;
     return null;
   }
+
+  // Use the first exporter for setup
+  const firstExporter = exporterConfigs[0];
+  const traceEndpoint = firstExporter.endpoint || process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
+  const traceHeaders = firstExporter.headers || {};
 
   const detected = detectResources();
   const manual = resourceFromAttributes({
@@ -128,19 +143,18 @@ export function initOpenTelemetry(
   });
 
   const traceExporter = new OTLPTraceExporter({
-    url: endpoint || process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+    url: traceEndpoint,
+    headers: traceHeaders,
   });
 
   const metricReader =
     metricsEnabled
       ? new PeriodicExportingMetricReader({
           exporter: new OTLPMetricExporter({
-            url: (endpoint || process.env.OTEL_EXPORTER_OTLP_ENDPOINT || '').replace(
-              '/v1/traces',
-              '/v1/metrics'
-            ),
+            url: (traceEndpoint || '').replace('/v1/traces', '/v1/metrics'),
+            headers: traceHeaders,
           }),
-          exportIntervalMillis: metricsIntervalMs,
+          exportIntervalMillis: firstExporter.metricsInterval ?? metricsIntervalMs,
         })
       : undefined;
 
@@ -169,6 +183,15 @@ export function initOpenTelemetry(
   };
 
   const sdk = new NodeSDK(config);
+
+  // Add additional span processors for multi-provider trace export
+  exporterConfigs.slice(1).forEach(cfg => {
+    const exporter = cfg.type === 'console'
+      ? new ConsoleSpanExporter()
+      : new OTLPTraceExporter({ url: cfg.endpoint, headers: cfg.headers });
+    // @ts-ignore: adding span processor to underlying provider
+    (trace.getTracerProvider() as any).addSpanProcessor(new BatchSpanProcessor(exporter));
+  });
 
   try {
     sdk.start();

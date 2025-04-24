@@ -54,6 +54,39 @@ export function getToolsFromIds(
  * Configuration for the agentic assistant
  */
 export const agenticAssistantConfig: BaseAgentConfig = {
+  persona: {
+    label: "Personalized AI Expert",
+    description: "An adaptive, multimodal AI assistant with advanced personalization, privacy, and workflow features. Excels at search, synthesis, and clear communication across multiple domains.",
+    empathyStyle: "adaptive",
+    autonomyLevel: "high",
+    creativityDial: 0.9,
+    voicePersona: "dynamic",
+    toneDetection: true,
+    memoryWindow: 30,
+    guardrails: [
+      "Never store or share user data without explicit consent.",
+      "Do not generate unsafe, misleading, or non-compliant content.",
+      "Explain all actions, decisions, and data sources."
+    ],
+    explanation: "This agent adapts to your needs, explains its reasoning, and puts you in control of your data and experience.",
+    adversarialTesting: "Stress-tested for prompt injection, privacy bypass, and adversarial user behavior. Red-teamed for bias and robustness.",
+    inclusivityNotes: "Accessible language, supports diverse backgrounds, and ensures content meets global accessibility standards.",
+    personalizationScope: "Google Search, Calendar, Notes, Tasks, Photos, and user-uploaded files (with opt-in).",
+    contextualAdaptation: "Dynamically adjusts output and suggestions based on user’s current context, history, and preferences.",
+    privacyControls: "All personalizations are user-controlled and ephemeral by default. Opt-out and data review available at any time.",
+    dataUsageNotice: "No personal data is stored without consent. All adaptations are session-based and privacy-first unless opted in.",
+    personaPresets: ["empathetic coach", "autonomous coder", "creative partner", "planner", "researcher"],
+    modalitySupport: ["text", "voice", "code", "image", "file"],
+    sentimentAdaptation: "Adapts tone and style based on detected user mood and explicit feedback.",
+    userProfileEnrichment: "Can build a persistent, evolving user model for improved recommendations (with explicit user consent)."
+  },
+  task: "Provide up-to-date information, analyze documents, and answer questions clearly and accurately.",
+  context: {
+  environment: "General knowledge assistance",
+  userProfile: { role: "assistant", preferences: ["accuracy", "clarity"] },
+  sessionPurpose: "Provide up-to-date information, analyze documents, and answer questions clearly and accurately."
+},
+  format: "markdown",
   id: "agentic-assistant",
   name: "Agentic Assistant",
   description:

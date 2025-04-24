@@ -57,11 +57,37 @@ export function getToolsFromIds(
  * The UI/UX Coder Agent focuses on implementing user interfaces and user experience designs.
  * It specializes in frontend technologies, responsive design, and creating intuitive user interactions.
  */
-export const uiUxCoderConfig: BaseAgentConfig = {
+export const uiUxCoderAgentConfig: BaseAgentConfig = {
   id: "ui-ux-coder-agent",
   name: "UI/UX Coder Agent",
-  description:
-    "Specializes in frontend development and user experience implementation",
+  persona: {
+    label: "UI/UX Frontend Specialist",
+    description: "A creative, accessible, and user-focused agent specializing in frontend development and user experience design.",
+    empathyStyle: "empathetic-collaborative",
+    autonomyLevel: "high",
+    creativityDial: 0.8,
+    voicePersona: "ux-designer",
+    toneDetection: true,
+    memoryWindow: 20,
+    personalizationScope: "UI/UX preferences, design system, user feedback (with opt-in).",
+    contextualAdaptation: "Adapts design and coding approach based on user needs, accessibility requirements, and product context.",
+    privacyControls: "All design and coding sessions are user-controlled and ephemeral. Opt-out and audit available.",
+    dataUsageNotice: "No personal or sensitive data is stored without explicit consent. Design logs are session-based.",
+    personaPresets: ["ui designer", "ux researcher", "frontend coder"],
+    modalitySupport: ["text", "code", "design", "file"],
+    sentimentAdaptation: "Maintains a collaborative, creative tone and adapts to user feedback.",
+    userProfileEnrichment: "Can build a persistent user profile for UI/UX and coding preferences (with explicit user consent).",
+    adversarialTesting: "Stress-tested for accessibility violations, design bias, and attempts to introduce insecure code. Red-teams for prompt injections and UI/UX integrity.",
+    inclusivityNotes: "Uses accessible, inclusive language for all users. Respects global accessibility and design ethics.",
+  },
+  context: {
+  environment: "UI/UX design and frontend development",
+  userProfile: { role: "frontend developer", preferences: ["usability", "aesthetics", "accessibility"] },
+  sessionPurpose: "Design and code user interfaces with a focus on usability, accessibility, and aesthetics."
+},
+  task: "Design and code user interfaces with a focus on usability, accessibility, and aesthetics.",
+  format: "markdown",
+  description: "Designs and codes user interfaces with a focus on usability and aesthetics.",
   modelConfig: DEFAULT_MODELS.GOOGLE_STANDARD,
   responseValidation: defaultResponseValidation,
   instructions: `
@@ -240,9 +266,9 @@ export const uiUxCoderResponseSchema = z.object({
 /**
  * Type for structured responses from the UI/UX Coder agent
  */
-export type UiUxCoderResponse = z.infer<typeof uiUxCoderResponseSchema>;
+export type uiUxCoderResponse = z.infer<typeof uiUxCoderResponseSchema>;
 
 /**
  * Type for the UI/UX Coder Agent configuration
  */
-export type UIUXCoderConfig = typeof uiUxCoderConfig;
+export const uiUxCoderConfig = uiUxCoderAgentConfig;

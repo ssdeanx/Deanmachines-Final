@@ -78,6 +78,8 @@ export function getElevenLabsVoice(): MastraVoice {
 }
 
 // Re-export the low-level factories & types
-export { createGoogleVoice, GoogleVoiceConfig } from "./googlevoice";
+export { createGoogleVoice } from "./googlevoice";
+export type { GoogleVoiceConfig } from "./googlevoice";
 export { createElevenLabsVoice } from "./elevenlabs";
 export type { MastraVoice };
+

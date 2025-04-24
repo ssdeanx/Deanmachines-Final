@@ -373,9 +373,105 @@ export interface ResponseHookOptions {
 }
 
 /**
+ * Persona configuration for advanced agent capabilities (2025+)
+ * Includes emotional intelligence, autonomy, creativity, voice persona, etc.
+ */
+export interface PersonaConfig {
+  /**
+   * Explicit boundaries, prohibited behaviors, and ethical constraints (Google Responsible AI 2025)
+   */
+  guardrails?: string[];
+  /**
+   * User-facing summary of what the persona is, what it can/can’t do, and how to get help or give feedback
+   */
+  explanation?: string;
+  /**
+   * Notes or references for how to stress-test the persona for robustness and safety
+   */
+  adversarialTesting?: string;
+  /**
+   * Guidance on inclusive language, accessibility, and cross-cultural considerations
+   */
+  inclusivityNotes?: string;
+  /**
+   * What types of user/app/environment data can be used for adapting responses? (e.g., search history, project files, user profile)
+   */
+  personalizationScope?: string;
+  /**
+   * How should the agent dynamically tailor its behavior/output based on context or user signals?
+   */
+  contextualAdaptation?: string;
+  /**
+   * Explicitly state how user data is handled, what is stored, and how users can opt in/out or control data usage.
+   */
+  privacyControls?: string;
+  /**
+   * Short, user-facing notice about data usage and privacy.
+   */
+  dataUsageNotice?: string;
+  /**
+   * List of supported persona modes (e.g., “empathetic coach”, “autonomous coder”, “creative partner”).
+   */
+  personaPresets?: string[];
+  /**
+   * Supported input/output modalities (text, voice, code, image, etc.).
+   */
+  modalitySupport?: string[];
+  /**
+   * How the agent adapts tone/style to user mood.
+   */
+  sentimentAdaptation?: string;
+  /**
+   * Whether/how the agent builds a persistent, evolving user profile.
+   */
+  userProfileEnrichment?: string;
+
+  /** Persona label for the agent, e.g. 'Autonomous Generalist' */
+  label: string;
+  /** Description of the agent's persona/character */
+  description: string;
+  /** Empathy style for emotional intelligence (e.g., supportive, neutral) */
+  empathyStyle?: string;
+  /** Level of autonomous task execution */
+  autonomyLevel?: "low" | "medium" | "high";
+  /** How creative the agent is (0-1) */
+  creativityDial?: number;
+  /** Voice persona/character for TTS */
+  voicePersona?: string;
+  /** Whether the agent detects and adapts to user tone */
+  toneDetection?: boolean;
+  /** How much user context is retained (number of turns/sessions) */
+  memoryWindow?: number;
+}
+
+/**
+ * Schema for PersonaConfig
+ */
+export const PersonaConfigSchema = z.object({
+  label: z.string(),
+  description: z.string(),
+  empathyStyle: z.string().optional(),
+  autonomyLevel: z.enum(["low", "medium", "high"]).optional(),
+  creativityDial: z.number().optional(),
+  voicePersona: z.string().optional(),
+  toneDetection: z.boolean().optional(),
+  memoryWindow: z.number().optional(),
+  guardrails: z.array(z.string()).optional(),
+  explanation: z.string().optional(),
+  adversarialTesting: z.string().optional(),
+  inclusivityNotes: z.string().optional(),
+  personalizationScope: z.string().optional(),
+  contextualAdaptation: z.string().optional(),
+  privacyControls: z.string().optional(),
+  dataUsageNotice: z.string().optional(),
+  personaPresets: z.array(z.string()).optional(),
+  modalitySupport: z.array(z.string()).optional(),
+  sentimentAdaptation: z.string().optional(),
+  userProfileEnrichment: z.string().optional(),
+}).describe("Schema for persona configuration");  
+
+/**
  * Base configuration interface for all agent configs
- *
- * @interface BaseAgentConfig
  */
 export interface BaseAgentConfig {
   /** Unique identifier for the agent */
@@ -383,6 +479,18 @@ export interface BaseAgentConfig {
 
   /** Display name of the agent */
   name: string;
+
+  /** Persona configuration for the agent */
+  persona: PersonaConfig;
+
+  /** Primary task or mission for the agent */
+  task: string;
+
+  /** Contextual data or environmental facts for the agent */
+  context?: Record<string, any>;
+
+  /** Preferred output format (e.g., markdown, JSON, step-by-step) */
+  format: string;
 
   /** Brief description of the agent's purpose and capabilities */
   description: string;

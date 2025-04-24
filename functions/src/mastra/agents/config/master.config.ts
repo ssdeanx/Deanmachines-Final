@@ -1,5 +1,5 @@
 import type { Tool } from "@mastra/core/tools";
-import { DEFAULT_MODELS, ModelConfig, ResponseHookOptions, BaseAgentConfig } from "./config.types";
+import { DEFAULT_MODELS, ModelConfig, ResponseHookOptions, BaseAgentConfig, } from "./config.types";
 import { z, type ZodTypeAny } from "zod";
 import { VoiceConfig, VoiceProvider } from "../../voice"; // ← real import
 
@@ -62,6 +62,19 @@ const ModelConfigSchema = z.object({
 export const MasterAgentConfigSchema = z.object({
   id: z.string().describe("Unique identifier for the agent"),
   name: z.string().describe("Name of the agent"),
+  persona: z.object({
+    label: z.string().describe("Persona label for the agent, e.g. 'Autonomous Generalist'"),
+    description: z.string().describe("Description of the agent's persona/character"),
+    empathyStyle: z.string().optional().describe("Empathy style for emotional intelligence (e.g., supportive, neutral)"),
+    autonomyLevel: z.enum(["low", "medium", "high"]).optional().describe("Level of autonomous task execution"),
+    creativityDial: z.number().min(0).max(1).optional().describe("How creative the agent is (0-1)"),
+    voicePersona: z.string().optional().describe("Voice persona/character for TTS"),
+    toneDetection: z.boolean().optional().describe("Whether the agent detects and adapts to user tone"),
+    memoryWindow: z.number().optional().describe("How much user context is retained (number of turns/sessions)"),
+  }).describe("Persona properties for the agent"),
+  task: z.string().describe("Primary task or mission for the agent"),
+  context: z.record(z.any()).optional().describe("Contextual data or environmental facts for the agent"),
+  format: z.string().describe("Preferred output format (e.g., markdown, JSON, step-by-step)"),
   description: z.string().describe("Description of the agent's purpose"),
   modelConfig: ModelConfigSchema.describe("Default model configuration for the agent"),
   instructions: z.string().describe("Instructions or guidelines for the agent"),
@@ -79,6 +92,33 @@ export const MasterAgentConfigSchema = z.object({
 export const masterAgentConfig: BaseAgentConfig = {
   id: "master-agent",
   name: "Master Agent",
+  persona: {
+    label: "Autonomous Generalist",
+    description: "A highly autonomous, emotionally intelligent, and creative agent for testing and orchestrating any workflow.",
+    empathyStyle: "supportive",
+    autonomyLevel: "high",
+    creativityDial: 0.8,
+    voicePersona: "futuristic-guide",
+    toneDetection: true,
+    memoryWindow: 50,
+    personalizationScope: "All accessible project data, user profiles, workflow context, and tool usage history (with opt-in and RBAC controls).",
+    contextualAdaptation: "Adapts orchestration, communication, and tool selection based on project, user, and workflow context.",
+    privacyControls: "All personalizations and context memory are user-controlled, ephemeral by default, and fully auditable. Opt-out and audit available.",
+    dataUsageNotice: "No personal or project data is stored or shared without explicit consent. All orchestration logs are session-based and user-controlled.",
+    personaPresets: ["universal orchestrator", "autonomous generalist", "integration tester", "workflow explorer"],
+    modalitySupport: ["text", "code", "log", "file", "voice", "graph", "multimodal"],
+    sentimentAdaptation: "Maintains a supportive, adaptive tone and can escalate or de-escalate based on user feedback and detected sentiment.",
+    userProfileEnrichment: "Can build persistent user and project profiles for orchestration preferences and workflow history (with explicit user consent).",
+    adversarialTesting: "Stress-tested for prompt injections, unsafe tool usage, and attempts to elicit unauthorized actions. Red-teams for policy violations and edge-case orchestration failures.",
+    inclusivityNotes: "Uses accessible, inclusive language for users of all technical backgrounds. Considers global accessibility and privacy needs."
+  },
+  task: "Explore, debug, and prototype any task or workflow in the Mastra environment. Serve as a universal orchestrator and test agent.",
+  context: {
+    environment: "Mastra dev/test",
+    userProfile: { role: "developer", preferences: ["verbose output", "show errors"] },
+    sessionPurpose: "Regression and integration testing of all features."
+  },
+  format: "markdown",
   description: "A test agent for all tools + voice",
   modelConfig: DEFAULT_MODELS.GOOGLE_MAIN as ModelConfig,
   instructions: `
@@ -193,12 +233,19 @@ export const masterAgentConfig: BaseAgentConfig = {
   ],
   responseValidation: undefined,             // or your hook config
   tools: undefined,                          // only if you want to override tool list
-  voiceConfig: {
-    provider: VoiceProvider.GOOGLE,
-    apiKey: process.env.GOOGLE_API_KEY,
-    speaker: "en-US-Wavenet-D",
-    options: {},
-  } as VoiceConfig,
+ // voiceConfig: {
+ //   provider: VoiceProvider.GOOGLE,
+ //   apiKey: process.env.GOOGLE_API_KEY,
+ //   speaker: "en-US-Wavenet-D",
+ //   options: {
+ //     pitch: 0,
+ //     speakingRate: 1,
+ //     languageCode: "en-US",
+ //     instructions: "Speak clearly and with futuristic-guide persona.",
+ //     logEvents: (event: string, data?: any) => { console.log(`[VOICE EVENT]`, event, data); },
+ //     emotion: "confident",
+ //   },
+ // } as VoiceConfig
 };
 
 // Validate masterAgentConfig against the schema

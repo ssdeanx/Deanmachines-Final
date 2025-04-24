@@ -116,7 +116,7 @@ export function createAgentFromConfig({
         // adds tools and instructions to the voice instance itself.
       } catch (voiceError) {
         const errorMsg = `Failed to create voice provider for agent ${config.id}: ${voiceError instanceof Error ? voiceError.message : String(voiceError)}`;
-        logger.error(errorMsg, voiceError);
+        logger.error(errorMsg);
         // Decide whether to throw or continue without voice. Throwing is safer.
         throw new AgentConfigError(errorMsg);
       }
@@ -137,7 +137,7 @@ export function createAgentFromConfig({
   } catch (error) {
     // Catch errors during Agent instantiation as well
     const errorMsg = `Failed to create agent ${config.id}: ${error instanceof Error ? error.message : String(error)}`;
-    logger.error(errorMsg, error);
+    logger.error(errorMsg);
     // Ensure the original error type is preserved if possible, or wrap if needed
     if (error instanceof AgentConfigError) throw error;
     throw new AgentConfigError(errorMsg);

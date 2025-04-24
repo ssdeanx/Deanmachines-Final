@@ -1,7 +1,6 @@
 import { Workflow, Step } from "@mastra/core/workflows";
 import { Mastra, type Mastra as MastraType } from "@mastra/core";
 import { LibSQLStore } from "@mastra/core/storage/libsql";
-import { Memory } from "@mastra/memory";
 import { createLogger } from "@mastra/core/logger";
 import { z } from "zod";
 import { sharedMemory } from "../database";
@@ -12,7 +11,6 @@ import { copywriterAgent } from "../agents/copywriter.agent";
 import { threadManager } from "../utils/thread-manager";
 import { createAISpan, recordMetrics } from "../services/signoz";
 import { initializeDefaultTracing } from "../services/tracing";
-import { consoleLogger } from "../database/consoleLogger";
 
 const logger = createLogger({ name: "multiagentWorkflow" });
 

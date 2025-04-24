@@ -201,10 +201,6 @@ export const analystAgentConfig: BaseAgentConfig = {
     "cryptoPrice",
     "cryptoTickers",
     "hyper-agent-task",
-    'mastra_mastraBlog',
-    'mastra_mastraDocs',
-    'mastra_mastraExamples',
-    'mastra_mastraChanges',
   ],
 };
 

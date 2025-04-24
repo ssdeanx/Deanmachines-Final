@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- **Advanced Test Workflow**: Introduced `advancedTestWorkflow` in `src/mastra/workflows/advancedTestWorkflow.ts` for orchestrating multi-agent (research, analysis, documentation, master) evaluation in sequence.
+- **Dynamic Preprocessing**: Integrated `workflowFactory` to preprocess topics dynamically before research, ensuring flexible, modular workflow composition.
+- **Barrel Export**: Exported `advancedTestWorkflow` from the workflow barrel (`src/mastra/workflows/index.ts`).
+- **Branch-Thinking Integration**: Used branch-thinking to plan and extract improvements and tasks for workflow design.
+
+### Changed
+
+- **Improved Error Handling**: Added explicit status/type checks when accessing dynamic workflow step results to prevent runtime errors.
+
+### Analysis & Planning
+
+- Outlined future enhancements via branch-thinking:
+  - Persisting intermediate outputs to memory for resumable workflows.
+  - Refactoring phases into nested sub-workflows for parallel execution.
+  - Adding conditional branching, suspend/resume, and retry/fallback logic.
+
+---
+
 ## [0.1.9] - 2025-04-24
 
 ### Added
@@ -14,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added GenAI semantic attribute keys to `OTelAttributeNames` (types.ts): `gen_ai.system`, `gen_ai.operation.name`, `gen_ai.request.model`, `gen_ai.response.token_count`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.latency_ms`.
 - Defined `LangfuseTraceOptions`, `LangfuseSpanOptions`, `LangfuseGenerationOptions`, and `LangfuseScoreOptions` in `services/types.ts` for strong typing of Langfuse calls.
 - Enhanced LangSmith integration (`services/langsmith.ts`): instrumented `createLangSmithRun` and `trackFeedback` with CLIENT spans and GenAI semantic conventions.
-- Improved SigNoz support (`services/signoz.ts`): normalized `exporters` array handling, multi-provider OTLP endpoints, `metricsInterval` support, and added GenAI attributes to HTTP spans and metrics.
+- Improved SigNoz support (`scrvices/signoz.ts`): normalized `exporters` array handling, multi-provider OTLP endpoints, `metricsInterval` support, and added GenAI attributes to HTTP spans and metrics.
 - Upgraded Langfuse service (`services/langfuse.ts`): instrumented `createTrace`, `createSpan`, and `logGeneration` with GenAI conventions; removed unsupported fields and cast payloads to `any` to align with client API.
 
 ### Fixed

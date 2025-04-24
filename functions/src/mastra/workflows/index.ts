@@ -9,6 +9,7 @@ import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { multiAgentWorkflow } from "./multiagentWorkflow";
 import  workflowFactory from "./workflowFactory";
+import { advancedTestWorkflow } from "./advancedTestWorkflow";
 const embeddings = new GoogleGenerativeAIEmbeddings({
   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
 });
@@ -348,8 +349,7 @@ export { ragWorkflow };
 export * from "./Networks/agentNetwork";
 export * from "./workflowFactory";
 export { multiAgentWorkflow };
-
-
+export { advancedTestWorkflow };
 
 // Export the workflowFactory for use in other parts of the application
 export { workflowFactory };

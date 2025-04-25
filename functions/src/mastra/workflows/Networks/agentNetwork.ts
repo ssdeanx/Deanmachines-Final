@@ -310,8 +310,8 @@ export const knowledgeWorkMoENetwork = new KnowledgeWorkMoENetwork(
   moeExpertIds,
   agents, // Pass the full agent registry
   moeRouterConfig,
-  "knowledge-work-moe-v1" // Unique ID for this network instance
-  // fallbackAgentId: 'agenticAssistant' // Default is usually fine
+  "knowledge-work-moe-v1", // Unique ID for this network instance
+  "masterAgent" // Registry key for masterAgent fallback
 );
 
 // Instrument and monitor MoE network

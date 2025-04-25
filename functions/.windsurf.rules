@@ -1,0 +1,112 @@
+# .windsurf.rules for Deanmachines-Final /functions Backend
+# Version: 1.3
+# Date: 2025-04-25
+# Purpose: Provides persistent, project-wide context, rules, and standards for the Windsurf AI coding assistant specifically for the backend Cloud Functions codebase.
+# Based on Deanmachines-Final package.json and validated community best practices for .windsurf.rules (v1.3 final).
+
+# --- Project Information ---
+project_name: Deanmachines-Final (Backend Functions)
+description: "Backend logic for an AI application using Mastra AI primitives, orchestrated by Genkit, running on Google Cloud Functions. Uses Firestore for persistence and numerous Agentic/Mastra tools. This file provides core rules and context for Windsurf."
+primary_language: typescript
+node_version: "22" # From engines field in package.json
+deployment_target: "Google Cloud Functions via 'firebase deploy --only functions'"
+repository_url: https://github.com/ssdeanx/Deanmachines-Final # Optional but helpful
+
+# --- Core Technologies & Key Dependencies (from package.json) ---
+# Specify critical libraries Windsurf should prioritize and understand within the /functions context.
+key_dependencies:
+  - name: firebase-admin
+    version: "Use version from package.json (e.g., ^13.2.0)"
+    notes: "**Mandatory & Sole Interface** for ALL backend Firestore, Firebase Auth, etc. interactions in this project's backend. Initialize via /functions/src/firebaseAdmin.ts (assume path). DO NOT use Firebase client SDK."
+  - name: firebase-functions
+    version: "Use version from package.json (e.g., ^6.3.2)"
+    notes: "Google Cloud Functions SDK for defining triggers."
+  - name: "@genkit-ai/core"
+    version: "Use version from package.json (e.g., ^1.6.2)"
+    notes: "Genkit Core for AI flow orchestration."
+  - name: "@genkit-ai/firebase"
+    version: "Use version from package.json (e.g., ^1.6.2)"
+    notes: "Genkit plugin for Firestore state/trace persistence (`genkit-flows`, `genkit-traces`). Configured in genkit.config.ts."
+  - name: "@genkit-ai/googleai"
+    version: "Use version from package.json (e.g., ^1.6.2)"
+    notes: "Genkit plugin for Google AI (Gemini). May be used alongside Vercel AI SDK for specific tasks."
+  - name: "@ai-sdk/google"
+    version: "Use version from package.json (e.g., ^1.2.12)"
+    notes: "**Primary interface for Google AI LLM/Embedding models** (via Vercel AI SDK), likely used by Mastra/Agentic components and for RAG embeddings. Refer to its documentation for model IDs and parameters."
+  - name: "@agentic/core"
+    version: "Use version from package.json (e.g., ^7.6.4)"
+    notes: "Core Agentic/Mastra primitives (Agents, Workflows, Tools)."
+  - name: "@agentic/genkit"
+    version: "Use version from package.json (e.g., ^7.6.4)"
+    notes: "Adapter integrating Agentic/Mastra components with Genkit flows."
+  - name: "@opentelemetry/..." # Multiple packages present
+    version: "Various (see package.json)"
+    notes: "Observability stack. Ensure code integrates correctly (e.g., context propagation, tracing spans) where relevant."
+  - name: "langfuse" # Or langsmith
+    version: "Use version from package.json (e.g., ^3.37.2)"
+    notes: "Tracing and observability platform integration. Ensure traces are correctly emitted/propagated."
+  - name: Other DB Connectors Present
+    notes: "Project includes dependencies for Pinecone, Upstash, PG, ClickHouse. **However, the standard backend persistence for core state (Agent, Workflow) and the primary RAG store for *this* project is Firestore via firebase-admin.** Only use other DB libraries if explicitly instructed for a specific, non-core task."
+  - name: Tooling Ecosystem
+    notes: "Extensive use of @agentic/* and @mastra/* tool wrappers for external integrations. Prioritize robust error handling for calls to these tools."
+
+# --- Architectural Patterns & Directory Structure (/functions context) ---
+architecture:
+  genkit_config: "/functions/src/genkit.config.ts" # Verify path exists - Genkit configuration
+  firebase_admin_init: "/functions/src/firebaseAdmin.ts" # Verify path exists - Central Firebase Admin SDK initialization (export 'db')
+  firestore_services:
+    location: "/functions/src/firestore/" # Verify path exists - Directory for Firestore service modules
+    description: "Implement all direct Firestore interactions (CRUD, queries) within dedicated service files here (e.g., agentStateService.ts). These services are called by Genkit flows or Mastra components."
+    access_method: "Import shared 'db' instance from '/functions/src/firebaseAdmin.ts'."
+  type_definitions:
+    location: "/functions/src/types/" # Verify path exists - Directory for shared TypeScript types/interfaces
+    description: "Define shared TypeScript interfaces, especially for Firestore schemas (e.g., firestoreSchemas.ts)."
+  test_files:
+    location: "/*.test.ts" # Example standard pattern for test files
+    description: "Place unit/integration tests in files matching this pattern."
+  error_handling:
+    pattern: "Use try...catch blocks for external calls (Firestore, APIs, Tools). Throw custom error classes (define in e.g., /functions/src/errors.ts) for application-specific errors."
+  state_management:
+    genkit_flows: "Use @genkit-ai/firebase plugin for basic flow resumability state (`genkit-flows` collection managed by Genkit)."
+    mastra_workflows: "**MUST use Firestore Transactions** via custom service (`workflowStateService.ts`) for durable state updates in `mastraWorkflowStates` collection. Atomicity is critical here."
+    mastra_agents: "Use custom service (`agentStateService.ts`) for **persistent/long-term** memory/config in `mastraAgentStates` collection. Separate from short-term, in-flow context."
+  observability:
+    instruction: "Ensure Genkit flows and potentially tool calls are correctly traced via OpenTelemetry/Langfuse configurations. Propagate trace context through calls."
+
+# --- Coding Standards & Style ---
+coding_standards:
+  linter: "ESLint (Run 'npm run lint'). Follow project's .eslintrc.js configuration."
+  formatter: "Assumed Prettier (Verify .prettierrc.js). Follow project's formatting configuration."
+  typescript_version: ^5.8.3 # From devDependencies in package.json
+  use_strict_equality: true # Prefer === and !==
+  require_jsdoc_for_exports: true # Enforce JSDoc comments for exported functions/classes
+  naming_conventions: # Adjust based on actual project standards
+    interfaces: PascalCase
+    types: PascalCase
+    functions: camelCase
+    variables: camelCase
+    constants: UPPER_SNAKE_CASE
+  type_safety:
+    instruction: "Strongly prefer specific types/interfaces over 'any'. Use TypeScript utility types where appropriate (e.g., Partial, Readonly)."
+
+# --- Security Best Practices ---
+security:
+  - instruction: "**Never store API keys, secrets, or credentials directly in code or Firestore documents.** Use Google Secret Manager and access via environment variables (process.env) in Cloud Functions."
+  - instruction: "Sanitize and validate **all** input received from external sources (e.g., HTTP request bodies, function trigger data)."
+  - instruction: "When accessing Firestore, verify authorization and access control based on context (e.g., userId from Genkit/Cloud Functions context) before performing user-specific operations."
+  - instruction: "Log errors carefully, avoiding exposure of sensitive data (PII, secrets, full error stacks unless in debug)."
+  - instruction: "Be mindful of Firestore Security Rules (`firestore.rules`) for defense-in-depth, especially for any collections potentially accessed directly by the frontend (though backend Admin SDK bypasses them)."
+
+# --- Specific Tool Usage & Instructions (Natural Language Rules for Windsurf) ---
+# These are natural language instructions/rules for Windsurf to follow when assisting with this project's backend.
+instructions:
+  - instruction: "Prioritize `async/await` for all asynchronous operations (Firestore calls, API fetches, LLM interactions)."
+  - instruction: "When implementing RAG search (`ragService.ts`), ensure the query embedding is generated using the **exact same model** (`@ai-sdk/google`'s `embed` function and model ID specified in config/context passed to the function) as the vectors stored in Firestore. Consistency is CRITICAL for RAG query results."
+  - instruction: "Reference the detailed task context (`llm.txt` or prompt) for specific implementation steps, function signatures, and logic requirements for the current task."
+  - instruction: "Handle errors robustly for calls to external tools wrapped by Agentic/Mastra libraries, potentially throwing specific error types."
+  - instruction: "If using multi-step generation (Cascade), ensure each step's purpose is clear and adheres to project standards outlined here."
+  - instruction: "If unsure about a requirement or architectural pattern defined here or in the task context, ask for clarification."
+  - instruction: "Use `@-Mentions` in the chat/editor (e.g., `@file:/functions/src/types/firestoreSchemas.ts`) to refer to specific files or symbols when relevant to the current step."
+  - instruction: "When creating/updating documents, always include `createdAt` (on create) and `lastUpdatedAt` (on create/update) fields with `admin.firestore.FieldValue.serverTimestamp()` for consistent timestamps."
+  - instruction: "Ensure unit/integration tests are considered for new functionality and follow the pattern in the test_files location."
+  - instruction: "Avoid unnecessary reads/writes to Firestore within tight loops or frequently called functions. Optimize data access patterns."
